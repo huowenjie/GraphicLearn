@@ -12,8 +12,6 @@ sudo apt install libsdl2-ttf-dev
 sudo apt install libsdl2-gfx-dev
 ``` 
 
-*** 
-
 ## BasicPipline 一个简单的软渲染管线 demo
 
 

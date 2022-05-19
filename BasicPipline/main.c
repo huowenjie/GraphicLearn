@@ -4,7 +4,7 @@
 #include "bp_renderer.h"
 #include "bp_trace.h"
 
-#define PI ((float)3.14159265459f)
+#define PI ((float)3.14159265359f)
 
 /* 初始化 */
 void init();
