@@ -1,12 +1,17 @@
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <SDL2/SDL.h>
 
 #include "bp_renderer.h"
 
 /*===========================================================================*/
 
+/* 帧缓冲 */
 static Uint32 surfaceBuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+/* z 缓冲 */
+static float z_buffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
 struct bp_context {
     SDL_Window *window;
