@@ -7,7 +7,7 @@
 
 /*===========================================================================*/
 
-/* 帧缓冲 */
+/* 帧缓冲*/
 static Uint32 surfaceBuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
 /* z 缓冲 */
@@ -99,6 +99,7 @@ void bp_render(BP_CONTEXT *ctx)
     SDL_Texture *texture = NULL;
     SDL_Renderer *renderer = NULL;
     SDL_Event *evt = NULL;
+    int i = 0;
 
     if (!ctx) {
         return;
@@ -108,7 +109,6 @@ void bp_render(BP_CONTEXT *ctx)
     renderer = ctx->renderer;
     evt = &(ctx->evt);
 
-    memset(surfaceBuffer, 0x00, SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(Uint32));
     if (ctx->before_render) {
         ctx->before_render();
     }
@@ -120,18 +120,23 @@ void bp_render(BP_CONTEXT *ctx)
             }
         }
 
-        // SDL_WaitEvent(&evt);
-        // if (evt.type == SDL_QUIT) {
-        //     goto end;
-        // }
+/*
+        SDL_WaitEvent(&evt);
+        if (evt.type == SDL_QUIT) {
+            goto end;
+        }
+*/
+        for (i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
+            surfaceBuffer[i] = 0x00000000;
+            z_buffer[i] = -FLT_MAX;
+        }
 
-        memset(surfaceBuffer, 0x00, SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(Uint32));
         if (ctx->update) {
             ctx->update();
         }
 
         SDL_UpdateTexture(texture, NULL, surfaceBuffer, SCREEN_WIDTH * sizeof(Uint32));
-        SDL_RenderClear(renderer);
+        /*SDL_RenderClear(renderer);*/
         SDL_RenderCopy(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
 
@@ -165,7 +170,7 @@ void bp_quit(BP_CONTEXT *ctx)
     SDL_Quit();
 }
 
-void bp_draw_pixel(int x, int y, const struct bp_pixel_color *color)
+void bp_draw_pixel(int x, int y, const struct bp_fragment *frag)
 {
     if (x > SCREEN_WIDTH - 1 || x < 0) {
         return;
@@ -175,19 +180,26 @@ void bp_draw_pixel(int x, int y, const struct bp_pixel_color *color)
         return;
     }
 
-    if (!color) {
+    if (!frag) {
         return;
     }
 
     y = SCREEN_HEIGHT - 1 - y;
-    surfaceBuffer[y * SCREEN_WIDTH + x] = 
-        0x00000000 | ((Uint32)(color->r) << 16) | ((Uint32)(color->g) <<  8) | color->b;
+
+    /* 深度测试 */
+    if (z_buffer[y * SCREEN_WIDTH + x] < frag->depth) {
+        z_buffer[y * SCREEN_WIDTH + x] = frag->depth;
+
+        /* 点光栅化 */
+        surfaceBuffer[y * SCREEN_WIDTH + x] = 
+            0x00000000 | ((Uint32)(frag->r) << 16) | ((Uint32)(frag->g) <<  8) | frag->b;
+    }
 }
 
 void bp_draw_line(
     int x0, int y0,
     int x1, int y1,
-    const struct bp_pixel_color *color
+    const struct bp_fragment *frag
 )
 {
     int dx = 0;
@@ -208,7 +220,7 @@ void bp_draw_line(
         return;
     }
 
-    if (!color) {
+    if (!frag) {
         return;
     }
 
@@ -229,9 +241,7 @@ void bp_draw_line(
 
     /* 两个坐标点相同则绘制点 */
     if (!dx && !dy) {
-        surfaceBuffer[(SCREEN_HEIGHT - 1 - y0) * SCREEN_WIDTH + x0] = 
-            0x00000000 | ((Uint32)(color->r) << 16) | ((Uint32)(color->g) <<  8) | color->b;
-
+        bp_draw_pixel(x0, y0, frag);
         return;
     }
 
@@ -254,8 +264,7 @@ void bp_draw_line(
 
         /* 斜率 (0, 1]，x 变化快于 y，以 x 为锚 */
         while (i <= x1) {
-            surfaceBuffer[(SCREEN_HEIGHT - 1 - j) * SCREEN_WIDTH + i] = 
-                0x00000000 | ((Uint32)(color->r) << 16) | ((Uint32)(color->g) <<  8) | color->b;
+            bp_draw_pixel(i, j, frag);
 
             if (d < 0) {
                 j++;
@@ -273,8 +282,7 @@ void bp_draw_line(
 
         /* 斜率 [1, infinity) y 的变化快于 x，以 y 为锚 */
         while (j <= y1) {
-            surfaceBuffer[(SCREEN_HEIGHT - 1 - j) * SCREEN_WIDTH + i] = 
-                0x00000000 | ((Uint32)(color->r) << 16) | ((Uint32)(color->g) <<  8) | color->b;
+            bp_draw_pixel(i, j, frag);
 
             if (d > 0) {
                 i++;
@@ -292,8 +300,7 @@ void bp_draw_line(
 
         /* 斜率 [-1, 0)，x 变化快于 y，以 x 为锚 */
         while (i <= x1) {
-            surfaceBuffer[(SCREEN_HEIGHT - 1 - j) * SCREEN_WIDTH + i] = 
-                0x00000000 | ((Uint32)(color->r) << 16) | ((Uint32)(color->g) <<  8) | color->b;
+            bp_draw_pixel(i, j, frag);
 
             if (d > 0) {
                 j--;
@@ -312,8 +319,7 @@ void bp_draw_line(
 
         /* 斜率 [1, infinity) y 的变化快于 x，以 y 为锚 */
         while (j >= y1) {
-            surfaceBuffer[(SCREEN_HEIGHT - 1 - j) * SCREEN_WIDTH + i] = 
-                0x00000000 | ((Uint32)(color->r) << 16) | ((Uint32)(color->g) <<  8) | color->b;
+            bp_draw_pixel(i, j, frag);
 
             if (d < 0) {
                 i++;
@@ -330,16 +336,14 @@ void bp_draw_line(
         j = y0 < y1 ? 1 : -1;
 
         while (i != y1) {
-            surfaceBuffer[(SCREEN_HEIGHT - 1 - i) * SCREEN_WIDTH + x0] = 
-                0x00000000 | ((Uint32)(color->r) << 16) | ((Uint32)(color->g) <<  8) | color->b;
+            bp_draw_pixel(i, j, frag);
 
             i += j;
         }
     } else if (!dy) {
         /* 绘制一条平行于 x 轴的横线 */
         while (i <= x1) {
-            surfaceBuffer[(SCREEN_HEIGHT - 1 - j) * SCREEN_WIDTH + i] = 
-                0x00000000 | ((Uint32)(color->r) << 16) | ((Uint32)(color->g) <<  8) | color->b;
+            bp_draw_pixel(i, j, frag);
 
             i++;
         }
@@ -350,7 +354,9 @@ void bp_fill_triangle(
     int x0, int y0,
     int x1, int y1,
     int x2, int y2,
-    const struct bp_pixel_color *color
+    const struct bp_fragment *frag0,
+    const struct bp_fragment *frag1,
+    const struct bp_fragment *frag2
 )
 {
     int xmin = x0;
@@ -377,78 +383,13 @@ void bp_fill_triangle(
         return;
     }
 
-    if (!color) {
-        return;
-    }
-
-    xmin = xmin < x1 ? xmin : x1;
-    xmin = xmin < x2 ? xmin : x2;
-    xmax = xmax > x1 ? xmax : x1;
-    xmax = xmax > x2 ? xmax : x2;
-
-    ymin = ymin < y1 ? ymin : y1;
-    ymin = ymin < y2 ? ymin : y2;
-    ymax = ymax > y1 ? ymax : y1;
-    ymax = ymax > y2 ? ymax : y2;
-
-    fa = (y1 - y2) * x0 + (x2 - x1) * y0 + x1 * y2 - x2 * y1;
-    fb = (y2 - y0) * x1 + (x0 - x2) * y1 + x2 * y0 - x0 * y2;
-    fc = (y0 - y1) * x2 + (x1 - x0) * y2 + x0 * y1 - x1 * y0;
-
-    for (i = ymin; i <= ymax; i++) {
-        for (j = xmin; j <= xmax; j++) {
-            float a = ((y1 - y2) * j + (x2 - x1) * i + x1 * y2 - x2 * y1) / fa;
-            float b = ((y2 - y0) * j + (x0 - x2) * i + x2 * y0 - x0 * y2) / fb;
-            float c = ((y0 - y1) * j + (x1 - x0) * i + x0 * y1 - x1 * y0) / fc;
-
-            if (a >= 0.0f && b >= 0.0f && c >= 0.0f) {
-                surfaceBuffer[(SCREEN_HEIGHT - 1 - i) * SCREEN_WIDTH + j] = 
-                    0x00000000 | ((Uint32)(color->r) << 16) | ((Uint32)(color->g) <<  8) | color->b;
-            }
-        }
-    }
-}
-
-void bp_fill_triangle_ex(
-    int x0, int y0,
-    int x1, int y1,
-    int x2, int y2,
-    const struct bp_pixel_color *color0,
-    const struct bp_pixel_color *color1,
-    const struct bp_pixel_color *color2
-)
-{
-    int xmin = x0;
-    int xmax = x0;
-    int ymin = y0;
-    int ymax = y0;
-
-    int i = 0;
-    int j = 0;
-
-    float fa = 0.0f;
-    float fb = 0.0f;
-    float fc = 0.0f;
-
-    if (x0 > SCREEN_WIDTH - 1 || x0 < 0 ||
-        x1 > SCREEN_WIDTH - 1 || x1 < 0 ||
-        x2 > SCREEN_WIDTH - 1 || x2 < 0) {
-        return;
-    }
-
-    if (y0 > SCREEN_HEIGHT - 1 || y0 < 0 ||
-        y1 > SCREEN_HEIGHT - 1 || y1 < 0 ||
-        y2 > SCREEN_HEIGHT - 1 || y2 < 0) {
-        return;
-    }
-
-    if (!color0 || !color1 || !color2) {
+    if (!frag0 || !frag1 || !frag2) {
         return;
     }
 
     /*
      * 1.确定三角形的包围盒 xmin xmax ymin ymax；
-     * 2.将像素点索引代入两点式求出中心坐标系数 a，b，c；
+     * 2.将像素点索引代入两点式求出重心坐标系数 a，b，c；
      * 3.拟定一个屏幕外的点 (-1, -1)，两个三角形共线时，以共线为分隔线，其中一个三角形的
      *   边上的像素点必定和该屏幕外点处于同一侧，以此来判断是否绘制；
      * 4.根据 a、b、c 来确定像素点的颜色
@@ -489,12 +430,18 @@ void bp_fill_triangle_ex(
                 if ((a >= 0.0f || ta > 0.0f) &&
                     (b >= 0.0f || tb > 0.0f) &&
                     (c >= 0.0f || tc > 0.0f)) {
-                    Uint32 red = a * color0->r + b * color1->r + c * color2->r;
-                    Uint32 green = a * color0->g + b * color1->g + c * color2->g;
-                    Uint32 blue = a * color0->b + b * color1->b + c * color2->b;
+                    Uint32 red = a * frag0->r + b * frag1->r + c * frag2->r;
+                    Uint32 green = a * frag0->g + b * frag1->g + c * frag2->g;
+                    Uint32 blue = a * frag0->b + b * frag1->b + c * frag2->b;
 
-                    surfaceBuffer[(SCREEN_HEIGHT - 1 - i) * SCREEN_WIDTH + j] = 
-                        0x00000000 | (red << 16) | (green << 8) | blue;
+                    /* 利用重心坐标计算深度信息 */
+                    float depth = a * frag0->depth + b * frag1->depth + c * frag2->depth;
+
+                    struct bp_fragment frag = {
+                        red, green, blue, depth 
+                    };
+
+                    bp_draw_pixel(j, i, &frag);
                 }
             }
         }
@@ -507,17 +454,18 @@ static void bp_draw_points(const struct vec4f_point *array, int count)
     int i = 0;
     int x = 0;
     int y = 0;
-    struct bp_pixel_color color = { 0 };
+    struct bp_fragment frag = { 0 };
 
     while (i < count) {
         x = (int)array[i].x;
         y = (int)array[i].y;
 
-        color.r = (unsigned char)((SDL_clamp(array[i].r, 0.0f, 1.0f)) * 255.0f);
-        color.g = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
-        color.b = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
+        frag.r = (unsigned char)((SDL_clamp(array[i].r, 0.0f, 1.0f)) * 255.0f);
+        frag.g = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
+        frag.b = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
+        frag.depth = -array[i].z;
 
-        bp_draw_pixel(x, y, &color);
+        bp_draw_pixel(x, y, &frag);
         i++;
     }
 }
@@ -526,26 +474,28 @@ static void bp_draw_points(const struct vec4f_point *array, int count)
 static void bp_draw_lines(const struct vec4f_point *array, int count)
 {
     int i = count - 1;
-    struct bp_pixel_color color = { 0 };
+    struct bp_fragment frag = { 0 };
 
     if ((count == 1) || (count % 2)) {
-        color.r = (unsigned char)((SDL_clamp(array[i].r, 0.0f, 1.0f)) * 255.0f);
-        color.g = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
-        color.b = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
+        frag.r = (unsigned char)((SDL_clamp(array[i].r, 0.0f, 1.0f)) * 255.0f);
+        frag.g = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
+        frag.b = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
+        frag.depth = -array[i].z;
 
-        bp_draw_pixel(array[i].x, array[i].y, &color);
+        bp_draw_pixel(array[i].x, array[i].y, &frag);
         count--;
     }
 
     for (i = 0; i < count; i += 2) {
-        color.r = (unsigned char)((SDL_clamp(array[i].r, 0.0f, 1.0f)) * 255.0f);
-        color.g = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
-        color.b = (unsigned char)((SDL_clamp(array[i].b, 0.0f, 1.0f)) * 255.0f);
+        frag.r = (unsigned char)((SDL_clamp(array[i].r, 0.0f, 1.0f)) * 255.0f);
+        frag.g = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
+        frag.b = (unsigned char)((SDL_clamp(array[i].b, 0.0f, 1.0f)) * 255.0f);
+        frag.depth = -array[i].z;
 
         bp_draw_line(
             array[i].x, array[i].y,
             array[i + 1].x, array[i + 1].y,
-            &color
+            &frag
         );
     }
 }
@@ -554,9 +504,9 @@ static void bp_draw_lines(const struct vec4f_point *array, int count)
 static void bp_draw_triangles(const struct vec4f_point *array, int count)
 {
     int i = 0;
-    struct bp_pixel_color ca = { 0 };
-    struct bp_pixel_color cb = { 0 };
-    struct bp_pixel_color cc = { 0 };
+    struct bp_fragment fraga = { 0 };
+    struct bp_fragment fragb = { 0 };
+    struct bp_fragment fragc = { 0 };
 
     if (count < 3) {
         return;
@@ -564,23 +514,26 @@ static void bp_draw_triangles(const struct vec4f_point *array, int count)
 
     count = count - (count % 3);
     for (; i < count; i += 3) {
-        ca.r = (unsigned char)((SDL_clamp(array[i].r, 0.0f, 1.0f)) * 255.0f);
-        ca.g = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
-        ca.b = (unsigned char)((SDL_clamp(array[i].b, 0.0f, 1.0f)) * 255.0f);
+        fraga.r = (unsigned char)((SDL_clamp(array[i].r, 0.0f, 1.0f)) * 255.0f);
+        fraga.g = (unsigned char)((SDL_clamp(array[i].g, 0.0f, 1.0f)) * 255.0f);
+        fraga.b = (unsigned char)((SDL_clamp(array[i].b, 0.0f, 1.0f)) * 255.0f);
+        fraga.depth = -array[i].z;
 
-        cb.r = (unsigned char)((SDL_clamp(array[i + 1].r, 0.0f, 1.0f)) * 255.0f);
-        cb.g = (unsigned char)((SDL_clamp(array[i + 1].g, 0.0f, 1.0f)) * 255.0f);
-        cb.b = (unsigned char)((SDL_clamp(array[i + 1].b, 0.0f, 1.0f)) * 255.0f);
+        fragb.r = (unsigned char)((SDL_clamp(array[i + 1].r, 0.0f, 1.0f)) * 255.0f);
+        fragb.g = (unsigned char)((SDL_clamp(array[i + 1].g, 0.0f, 1.0f)) * 255.0f);
+        fragb.b = (unsigned char)((SDL_clamp(array[i + 1].b, 0.0f, 1.0f)) * 255.0f);
+        fragb.depth = -array[i + 1].z;
 
-        cc.r = (unsigned char)((SDL_clamp(array[i + 2].r, 0.0f, 1.0f)) * 255.0f);
-        cc.g = (unsigned char)((SDL_clamp(array[i + 2].g, 0.0f, 1.0f)) * 255.0f);
-        cc.b = (unsigned char)((SDL_clamp(array[i + 2].b, 0.0f, 1.0f)) * 255.0f);
+        fragc.r = (unsigned char)((SDL_clamp(array[i + 2].r, 0.0f, 1.0f)) * 255.0f);
+        fragc.g = (unsigned char)((SDL_clamp(array[i + 2].g, 0.0f, 1.0f)) * 255.0f);
+        fragc.b = (unsigned char)((SDL_clamp(array[i + 2].b, 0.0f, 1.0f)) * 255.0f);
+        fragc.depth = -array[i + 2].z;
 
-        bp_fill_triangle_ex(
+        bp_fill_triangle(
             array[i].x, array[i].y,
             array[i + 1].x, array[i + 1].y,
             array[i + 2].x, array[i + 2].y,
-            &ca, &cb, &cc
+            &fraga, &fragb, &fragc
         );
     }
 }

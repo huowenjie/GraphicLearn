@@ -16,11 +16,15 @@
 #define BP_DT_LINES (BP_DT_POINT + 1)
 #define BP_DT_TRIANGLES (BP_DT_LINES + 1)
 
-/* 像素颜色 */
-struct bp_pixel_color {
+/* 片元定义 */
+struct bp_fragment {
+    /* 颜色定义 */
     unsigned char r;
     unsigned char g;
     unsigned char b;
+
+    /* 像素深度 */
+    float depth;
 };
 
 /* 定义上下文 */
@@ -32,13 +36,13 @@ void bp_render(BP_CONTEXT *ctx);
 void bp_quit(BP_CONTEXT *ctx);
 
 /* 在指定位置绘制指定颜色的像素 */
-void bp_draw_pixel(int x, int y, const struct bp_pixel_color *color);
+void bp_draw_pixel(int x, int y, const struct bp_fragment *frag);
 
 /* 中点算法绘制直线 */
 void bp_draw_line(
     int x0, int y0,
     int x1, int y1,
-    const struct bp_pixel_color *color
+    const struct bp_fragment *frag
 );
 
 /* 填充三角形 */
@@ -46,17 +50,9 @@ void bp_fill_triangle(
     int x0, int y0,
     int x1, int y1,
     int x2, int y2,
-    const struct bp_pixel_color *color
-);
-
-/* 填充三角形，使用中心坐标填充颜色 */
-void bp_fill_triangle_ex(
-    int x0, int y0,
-    int x1, int y1,
-    int x2, int y2,
-    const struct bp_pixel_color *color0,
-    const struct bp_pixel_color *color1,
-    const struct bp_pixel_color *color2
+    const struct bp_fragment *frag0,
+    const struct bp_fragment *frag1,
+    const struct bp_fragment *frag2
 );
 
 /* 绘制顶点数组 */
