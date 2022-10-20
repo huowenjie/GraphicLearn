@@ -190,6 +190,8 @@ void bp_draw_pixel(int x, int y, const struct bp_fragment *frag)
     if (z_buffer[y * SCREEN_WIDTH + x] < frag->depth) {
         z_buffer[y * SCREEN_WIDTH + x] = frag->depth;
 
+        /* 片段着色 */
+
         /* 点光栅化 */
         surfaceBuffer[y * SCREEN_WIDTH + x] = 
             0x00000000 | ((Uint32)(frag->r) << 16) | ((Uint32)(frag->g) <<  8) | frag->b;

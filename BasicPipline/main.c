@@ -55,14 +55,16 @@ static struct vec4f to_max = { (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT, 1.0f, 
 
 static struct mat4x4f view;
 
+#define DRAW_UNIT_LEN 1.3f
+
 /* 顶点数组 */
 struct vec4f_point vt_array[] = {
-    { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f, 1.0f },
-    {  0.5f, -0.5f, 0.0f, 1.0f, 0.3f, 0.3f, 0.2f, 1.0f },
-    { -0.5f,  0.5f, 0.0f, 1.0f, 0.1f, 0.4f, 0.3f, 1.0f },
-    {  0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f },
-    { -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.3f, 0.2f, 1.0f },
-    {  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.3f, 1.0f, 1.0f }
+    { -DRAW_UNIT_LEN, -DRAW_UNIT_LEN, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f },
+    {  DRAW_UNIT_LEN, -DRAW_UNIT_LEN, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f },
+    { -DRAW_UNIT_LEN,  DRAW_UNIT_LEN, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f },
+    {  DRAW_UNIT_LEN, -DRAW_UNIT_LEN, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f },
+    { -DRAW_UNIT_LEN,  DRAW_UNIT_LEN, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f },
+    {  DRAW_UNIT_LEN,  DRAW_UNIT_LEN, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f }
 #if 0
     { -0.5f, -0.5f,  0.5f, 1.0f },
     {  0.5f, -0.5f,  0.5f, 1.0f },
@@ -94,7 +96,7 @@ void update()
     mat4x4f_unit(&view);
 
     /* 构造旋转矩阵，一秒转动 10 度 */
-    mat4x4f_rotate(&view, 10.0f * ((float)cur) * PI / 180.0f, &axis);
+    mat4x4f_rotate(&view, 0.0f * ((float)cur) * PI / 180.0f, &axis);
 
     /* 相机 + 透视变换 */
     mat4x4f_lookat(&view, &cam_pos, &cam_target, &cam_up);
