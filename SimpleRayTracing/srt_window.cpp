@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <cstring>
+#include <cstdio>
 #include "srt_window.h"
 
 //-----------------------------------------------------------------------------
@@ -8,16 +9,13 @@
 class SRT_WinCtx
 {
 public:
-    SRT_WinCtx() {
-        window = NULL;
-        texture = NULL;
-        renderer = NULL;
+    SRT_WinCtx()
+    {
+        window = nullptr;
+        texture = nullptr;
+        renderer = nullptr;
 
-        start = NULL;
-        update = NULL;
-        end = NULL;
-
-        surfaceBuffer = NULL;
+        surfaceBuffer = nullptr;
     }
 public:
     SDL_Window *window;
@@ -25,9 +23,7 @@ public:
     SDL_Renderer *renderer;
     SDL_Event evt;
 
-    void (*start)();
-    void (*update)();
-    void (*end)();
+    void (*visitPixel)(const SRT_Vec2f &, const SRT_Vec2f &, SRT_Color &);
 
     // 帧缓冲
     Uint32 *surfaceBuffer;
@@ -50,18 +46,18 @@ SRT_Window::~SRT_Window()
     if (info) {
         if (info->surfaceBuffer) {
             delete info->surfaceBuffer;
-            info->surfaceBuffer = NULL;
+            info->surfaceBuffer = nullptr;
         }
         delete info;
-        info = NULL;
+        info = nullptr;
     }
 }
 
 bool SRT_Window::initialize()
 {    
-    SDL_Window *window = NULL;
-    SDL_Texture *texture = NULL;
-    SDL_Renderer *renderer = NULL;
+    SDL_Window *window = nullptr;
+    SDL_Texture *texture = nullptr;
+    SDL_Renderer *renderer = nullptr;
 
     if (!info) {
         return false;
@@ -104,9 +100,7 @@ bool SRT_Window::initialize()
     info->window = window;
     info->texture = texture;
     info->renderer = renderer;
-    info->start = NULL;
-    info->update = NULL;
-    info->end = NULL;
+    info->visitPixel = nullptr;
 
     return true;
 
@@ -133,9 +127,7 @@ bool SRT_Window::terminate()
         return false;
     }
 
-    info->start = NULL;
-    info->update = NULL;
-    info->end = NULL;
+    info->visitPixel = nullptr;
 
     if (info->texture) {
         SDL_DestroyTexture(info->texture);
@@ -155,9 +147,9 @@ bool SRT_Window::terminate()
 
 void SRT_Window::render()
 {
-    SDL_Texture *texture = NULL;
-    SDL_Renderer *renderer = NULL;
-    SDL_Event *evt = NULL;
+    SDL_Texture *texture = nullptr;
+    SDL_Renderer *renderer = nullptr;
+    SDL_Event *evt = nullptr;
 
     if (!info) {
         return;
@@ -167,10 +159,6 @@ void SRT_Window::render()
     renderer = info->renderer;
     evt = &(info->evt);
 
-    if (info->start) {
-        info->start();
-    }
-
     while (1) {
         while (SDL_PollEvent(evt)) {
             if (evt->type == SDL_QUIT) {
@@ -178,44 +166,48 @@ void SRT_Window::render()
             }
         }
 
+        int count = winWidth * winHeight;
+
         // 清屏
         Uint32 *buffer = info->surfaceBuffer;
-        std::memset(buffer, 0, winWidth * winHeight * sizeof(Uint32));
+        std::memset(buffer, 0, count * sizeof(Uint32));
 
-        if (info->update) {
-            info->update();
+        if (info->visitPixel) {
+            SRT_Color color;
+            SRT_Vec2f uv;
+            SRT_Vec2f res((float)winWidth, (float)winHeight);
+
+            // 逐像素访问
+            for (int i = 0; i < count; i++) {
+                color.setRGB(0.0f);
+
+                int x = i % (winWidth);
+                int y = i / (winWidth);
+
+                // 将坐标归一化，将 y 的方向翻转，达到和 glsl shader 一样的效果
+                uv.x = (float)(x) / ((float)winWidth - 1.0f);
+                uv.y = 1.0f - (float)(y) / ((float)winHeight - 1.0f);
+
+                // 将分辨率转换为浮点型也一并传入
+                info->visitPixel(res, uv, color);
+                buffer[i] = color.toUintRGB();
+            }
         }
 
-        SDL_UpdateTexture(texture, NULL, info->surfaceBuffer, winWidth * sizeof(Uint32));
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_UpdateTexture(texture, nullptr, info->surfaceBuffer, winWidth * sizeof(Uint32));
+        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
         SDL_RenderPresent(renderer);
 
         SDL_Delay(100);
     }
-
-    if (info->end) {
-        info->end();
-    }
 }
 
-void SRT_Window::setStartCallback(void (*start)())
+void SRT_Window::setForeachPixelCallback(
+    void (*visitPixel)(const SRT_Vec2f &, const SRT_Vec2f &, SRT_Color &)
+)
 {
-    if (info) {
-        info->start = start;
-    }
-}
-
-void SRT_Window::setUpdateCallback(void (*update)())
-{
-    if (info) {
-        info->update = update;
-    }
-}
-
-void SRT_Window::setEndCallback(void (*end)())
-{
-    if (info) {
-        info->end = end;
+    if (visitPixel) {
+        info->visitPixel = visitPixel;
     }
 }
 

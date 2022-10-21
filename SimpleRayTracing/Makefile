@@ -3,7 +3,7 @@ BIN_PATH := .
 INC_PATH := .
 SRC_PATH := .
 LIB_PATH :=
-LIB_LIST := SDL2 m dl
+LIB_LIST := SDL2 dl
 
 VER_MAJ := 1
 VER_MIN := 0.0

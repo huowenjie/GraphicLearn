@@ -1,6 +1,9 @@
 #ifndef __SRT_WINDOW_H__
 #define __SRT_WINDOW_H__
 
+#include "srt_color.h"
+#include "srt_vec2f.h"
+
 //-----------------------------------------------------------------------------
 // 窗口上下文
 //-----------------------------------------------------------------------------
@@ -21,10 +24,10 @@ public:
     void render();
 
 public:
-    // 设置回调
-    void setStartCallback(void (*start)());
-    void setUpdateCallback(void (*update)());
-    void setEndCallback(void (*update)());
+    // 设置回调，visitPixel 的参数分别为 x、y、color
+    void setForeachPixelCallback(
+        void (*visitPixel)(const SRT_Vec2f &, const SRT_Vec2f &, SRT_Color &)
+    );
 
 private:
     SRT_WinCtx *info;
