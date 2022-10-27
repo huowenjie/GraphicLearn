@@ -1,5 +1,6 @@
 #include <cstdio>
 #include "srt_color.h"
+#include "srt_global.h"
 
 //-----------------------------------------------------------------------------
 
@@ -151,6 +152,14 @@ void SRT_Color::setRGB(float r, float g, float b)
     this->r = r;
     this->g = g;
     this->b = b;
+}
+
+void SRT_Color::clamp()
+{
+    this->r = srtClampf(r, 1.0f, 0.0f);
+    this->g = srtClampf(g, 1.0f, 0.0f);
+    this->b = srtClampf(b, 1.0f, 0.0f);
+    this->a = srtClampf(a, 1.0f, 0.0f);
 }
 
 void SRT_Color::printValue(const char *title) const

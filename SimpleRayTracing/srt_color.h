@@ -41,6 +41,9 @@ public:
     void setRGB(float rgb);
     void setRGB(float r, float g, float b);
 
+    // 限制颜色范围
+    void clamp();
+
     // 打印颜色
     void printValue(const char *title = nullptr) const;
 

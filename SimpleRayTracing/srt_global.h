@@ -14,6 +14,10 @@
 // 夹逼
 float srtClampf(float val, float max, float min);
 
+// 选择最值
+float srtMaxf(float a, float b);
+float srtMinf(float a, float b);
+
 //-----------------------------------------------------------------------------
 
 #endif // __SRT_GLOBAL_H__
