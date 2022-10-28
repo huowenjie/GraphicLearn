@@ -44,17 +44,13 @@ static int sphereHit(
 );
 
 /**
- * Lambertian Shading 模型
- * L = kd I max(0, n · l)
- * 
- * kd 是漫反射因子
- * I 是光照强度
- * n 是光线与物体交点法线
- * l 是光源方向
+ * BlinnPhong Shading 模型
+ * L = ka * Ia + kd * I * max(0, n · l) + ks * I *max(0, n · h)^n
  */
-static float lambertianShading(
+static float blinnPhongShading(
     const SRT_Vec3f &lightDir,
-    const SRT_Vec3f &normal
+    const SRT_Vec3f &normal,
+    const SRT_Vec3f &viewDir
 );
 
 int main(int argc, char *argv[])
@@ -76,82 +72,94 @@ void visitPixels(const SRT_Vec2f &resolution, const SRT_Vec2f &uv, SRT_Color &co
 
     // 定义摄像机位置也是光线的原点
     SRT_Vec3f camera(0.0f, 0.0f, 5.0f);
-    SRT_Vec3f imagePlane(st.x, st.y, 0.0f);
+
+    // 定义摄像机注视方向（固定）
+    SRT_Vec3f lookDir(0.0f, 0.0f, -1.0f);
 
     // 定义光源位置 默认是白光
-    SRT_Vec3f light(3.0f, 4.0f, 0.0f);
+    SRT_Vec3f light(2.0f, 4.0f, 4.0f);
+    SRT_Color lightColor(1.0f);
 
     // 计算光线方向
-    SRT_Vec3f rayDir = imagePlane - camera;
+    SRT_Vec3f rayDir = lookDir + SRT_Vec3f(st.x, st.y, 0.0f);
     rayDir.normalize();
 
     // 定义两个球
     Sphere sps[] {
-        Sphere(SRT_Vec3f(0.0f), SRT_Color(0.7f, 0.0f, 0.0f), 0.3f),
-        Sphere(SRT_Vec3f(0.2f, 0.2f, 1.0f), SRT_Color(0.0f, 0.3f, 1.0f), 0.3f)
+        Sphere(SRT_Vec3f(1.0f, 1.0f, 1.0f), SRT_Color(1.0f, 0.0f, 0.0f), 1.0f),
+        Sphere(SRT_Vec3f(-1.2f, 0.0f, 0.0f), SRT_Color(0.3f, 0.3f, 1.0f), 1.0f)
     };
 
     bool isHit = false;
-    int index = 0;
-    float mint = -10000.0f;
+    int index = -1;
+    float mint = 0.0f;
+    float t = 0.0f;
 
     for (int i = 0; i < 2; i++) {
-        float t = 0.0f;
         int hit = sphereHit(camera, rayDir, sps[i].center, sps[i].r, &t, nullptr);
-
         if (hit >= 0) {
+            if (i == 0) {
+                mint = t;
+            }
+
             if (t < mint) {
                 mint = t;
-                index = i;
-                isHit = true;
             }
+
+            isHit = true;
+            index = i;
         }
     }
 
-    if (isHit) {
-        color = sps[index].color;
-    }
-
     // 相交点法线向量
-    // SRT_Vec3f normal;
+    if (isHit) {
+        SRT_Vec3f normal;
 
-    // float t1 = 0.0f;
-    // float t2 = 0.0f;
-    // float t = 0.0f;
+        // 计算交点
+        SRT_Vec3f hitPoint = camera + t * rayDir;
 
-    // int hit1 = sphereHit(camera, rayDir, sps[0].center, sps[0].r, &t1, nullptr);
-    // if (hit1 >= 0) {
-    //     color = sps[0].color;
-    //     t = t1;
+        // 计算光源方向
+        SRT_Vec3f lightDir = light - hitPoint;
+        lightDir.normalize();
 
-    //     //normal = center1;
-    // }
+        bool isShadow = false;
 
-    // int hit2 = sphereHit(camera, rayDir, sps[1].center, sps[1].r, &t2, nullptr);
-    // if (hit2 >= 0) {
-    //     if (t2 < t1) {
-    //         color = sps[1].color;
-    //         t = t2;
-    //         //normal = center2;
-    //     }
-    // }
+        for (int i = 0; i < 2; i++) {
+            if (i == index) {
+                continue;
+            }
 
-    // if (hit1 >= 0 || hit2 >=0) {
-    //     // 计算交点
-    //     SRT_Vec3f hitPoint = camera + t * rayDir;
+            /* 这里的碰撞点有问题 TODO t 不一定与 hitPoint 一致 */
 
-    //     // 计算光源方向
-    //     SRT_Vec3f lightDir = light - hitPoint;
-    //     lightDir.normalize();
+            /* 将光线原点定为当前对象的射线碰撞点，光线方向为光源方向，检测光线是否和其他对象碰撞，如果碰撞，则代表当前
+               碰撞位置则为阴影像素 */
+            if (sphereHit(hitPoint, lightDir, sps[i].center, sps[i].r, nullptr, nullptr) >= 0) {
+                isShadow = true;
+                break;
+            }
+        }
 
-    //     // 计算法线向量
-    //     normal = hitPoint - normal;
-    //     normal.normalize();
+        if (!isShadow) {
+            /* 计算法线向量 */
+            normal = hitPoint - sps[index].center;
+            normal.normalize();
 
-    //     // 着色
-    //     float lbs = lambertianShading(lightDir, normal);
-    //     color = lbs * color;
-    // }
+            /* 计算视线 */
+            SRT_Vec3f viewDir = camera - hitPoint;
+            viewDir.normalize();
+
+            /* 着色 */
+            float lbs = blinnPhongShading(lightDir, normal, viewDir);
+            color = lbs * lightColor * sps[index].color;
+
+            /* 将颜色值限定在 0.0~1.0 */
+            color.clamp();
+        } else {
+            color = 0.04f * color;
+        }
+    } else {
+        color = SRT_Color(uv.y);
+    }
 }
 
 /**
@@ -211,13 +219,26 @@ int sphereHit(
     return 0;
 }
 
-float lambertianShading(
+float blinnPhongShading(
     const SRT_Vec3f &lightDir,
-    const SRT_Vec3f &normal
+    const SRT_Vec3f &normal,
+    const SRT_Vec3f &viewDir
 )
 {
-    float kd = 0.3f;
-    float i = 10.0f;
-    float lsd = kd * i * srtMaxf(0.0f, lightDir.dot(normal));
-    return srtClampf(lsd, 1.0f, 0.0f);
+    float ka = 0.2f;
+    float kd = 1.0f;
+    float ks = 0.8f;
+
+    float ia = 0.2f;
+    float i = 0.6f;
+
+    SRT_Vec3f h = viewDir + lightDir;
+    h.normalize();
+
+    float diff = kd * i * srtMaxf(0.0f, lightDir.dot(normal));
+    float ambient = ka * ia;
+    float specular = ks * i * std::pow(srtMaxf(0.0f, normal.dot(h)), 32.0f);
+
+    float blinnPhong = diff + ambient + specular;
+    return blinnPhong;
 }
