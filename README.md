@@ -15,7 +15,4 @@ sudo apt install libsdl2-gfx-dev
 ``` 
 
 ## BasicPipline 一个简单的软渲染管线 demo
-## SimpleRayTracing 是一个简单的光线追踪 demo
-
-
-
+## SimpleRayTracing 是一个简单的光线追踪 demo 学习虎书 1~4 章节的成果
