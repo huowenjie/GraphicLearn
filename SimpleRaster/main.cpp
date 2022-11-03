@@ -5,6 +5,7 @@
 #include "sr_vec3f.h"
 #include "sr_global.h"
 #include "sr_mat2x2f.h"
+#include "sr_mat3x3f.h"
 
 // 逐像素访问，效果类似于片段着色器
 static void visitPixels(const SR_Vec2f &resolution, const SR_Vec2f &uv, SR_Color &color);
@@ -18,27 +19,38 @@ int main(int argc, char *argv[])
     // window.render();
     // window.terminate();
 
-    SR_Vec2f vec(1.0f, 1.0f);
-    SR_Mat2x2f ma = SR_Mat2x2f::unitMatrix();
-    SR_Mat2x2f mb = SR_Mat2x2f::zeroMatrix();
+    SR_Vec3f vec(1.0f, 1.0f, 1.0f);
+    SR_Mat3x3f ma = SR_Mat3x3f::unitMatrix();
+    SR_Mat3x3f mb = SR_Mat3x3f::zeroMatrix();
 
-    float elems[] = { 1.0f, 2.0f, 3.0f, 4.0f };
-    float elemij[2][2] = {
-        { 1.0f, 2.0f },
-        { 3.0f, 4.0f }
+    float elems[] = {
+        2.0f,  1.0f,  3.0f,
+        1.0f, -1.0f,  1.0f,
+        1.0f,  4.0f, -2.0f
     };
 
-    SR_Mat2x2f mc(elems);
-    SR_Mat2x2f md(elemij);
-    SR_Mat2x2f me;
-    SR_Mat2x2f mf;
-    SR_Mat2x2f mg;
-    SR_Mat2x2f mh;
-    SR_Mat2x2f mi;
+    float elemij[3][3] = {
+        { 2.0f,  1.0f,  3.0f },
+        { 1.0f, -1.0f,  1.0f },
+        { 1.0f,  4.0f, -2.0f }
+    };
 
-    me = mc * md * ma;
-    mf = me.transpose();
-    mg = 10.0f * (me - mf) * 10.0f;
+    SR_Mat3x3f mc(elems);
+    SR_Mat3x3f md(elemij);
+    SR_Mat3x3f me;
+    SR_Mat3x3f mf;
+    SR_Mat3x3f mg;
+    SR_Mat3x3f mh;
+    SR_Mat3x3f mi;
+
+    me = -md;
+    mf = me * md;
+    mg = mc * mf;
+    mh = mg.transpose();
+
+    mi[0][2] = 5.0f;
+    mi[1][2] = 5.0f;
+    vec = mi * vec;
 
     ma.printValue("ma");
     mb.printValue("mb");
@@ -46,14 +58,10 @@ int main(int argc, char *argv[])
     md.printValue("md");
     me.printValue("me");
     mf.printValue("mf");
-    // vec.printValue("vec");
-
-    mh = -mf;
-    mi = mh * mf;
-
     mg.printValue("mg");
     mh.printValue("mh");
     mi.printValue("mi");
+    vec.printValue("vec");
 
     return 0;
 }

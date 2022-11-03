@@ -75,7 +75,7 @@ SR_Mat2x2f SR_Mat2x2f::inverse(const SR_Mat2x2f &mat)
     float det = mat.m00 * mat.m11 - mat.m01 * mat.m10;
     
     // 行列式为 0，不可逆，直接返回原矩阵
-    if (std::abs(det) < 1e-6) {
+    if (std::abs(det) < 1e-6f) {
         return mat;
     }
 
