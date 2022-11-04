@@ -60,15 +60,6 @@ SR_Mat3x3f::SR_Mat3x3f(const SR_Mat3x3f &mat)
 
 SR_Mat3x3f::~SR_Mat3x3f()
 {
-    this->m00 = 0.0f;
-    this->m01 = 0.0f;
-    this->m02 = 0.0f;
-    this->m10 = 0.0f;
-    this->m11 = 0.0f;
-    this->m12 = 0.0f;
-    this->m20 = 0.0f;
-    this->m21 = 0.0f;
-    this->m22 = 0.0f;
 }
 
 SR_Mat3x3f SR_Mat3x3f::unitMatrix()
@@ -98,13 +89,7 @@ SR_Mat3x3f SR_Mat3x3f::transpose(const SR_Mat3x3f &mat)
 SR_Mat3x3f SR_Mat3x3f::inverse(const SR_Mat3x3f &mat)
 {
     // 求行列式
-    float det = 
-        mat.m00 * mat.m11 * mat.m22 +
-        mat.m02 * mat.m10 * mat.m21 +
-        mat.m01 * mat.m12 * mat.m20 -
-        mat.m00 * mat.m21 * mat.m12 - 
-        mat.m01 * mat.m10 * mat.m22 -
-        mat.m02 * mat.m11 * mat.m20;
+    float det = SR_Mat3x3f::determinant(mat);
 
     // 行列式为 0，不可逆，直接返回原矩阵
     if (std::abs(det) < 1e-6f) {
@@ -130,6 +115,17 @@ SR_Mat3x3f SR_Mat3x3f::inverse(const SR_Mat3x3f &mat)
     adj.m22 = (mat.m00 * mat.m11 - mat.m01 * mat.m10) / det;
 
     return adj;
+}
+
+float SR_Mat3x3f::determinant(const SR_Mat3x3f &mat)
+{
+    return
+        mat.m00 * mat.m11 * mat.m22 +
+        mat.m02 * mat.m10 * mat.m21 +
+        mat.m01 * mat.m12 * mat.m20 -
+        mat.m00 * mat.m21 * mat.m12 - 
+        mat.m01 * mat.m10 * mat.m22 -
+        mat.m02 * mat.m11 * mat.m20;
 }
 
 SR_Mat3x3f & SR_Mat3x3f::operator=(const SR_Mat3x3f &mat)
@@ -259,6 +255,11 @@ SR_Mat3x3f SR_Mat3x3f::operator-() const
 SR_Mat3x3f SR_Mat3x3f::transpose() const
 {
     return SR_Mat3x3f::transpose(*this);
+}
+
+float SR_Mat3x3f::determinant() const
+{
+    return SR_Mat3x3f::determinant(*this);
 }
 
 void SR_Mat3x3f::printValue(const char *title) const

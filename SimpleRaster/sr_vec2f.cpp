@@ -6,14 +6,14 @@
 
 SR_Vec2f::SR_Vec2f()
 {
-    x = 0.0f;
-    y = 0.0f;
+    this->x = 0.0f;
+    this->y = 0.0f;
 }
 
 SR_Vec2f::SR_Vec2f(float xy)
 {
-    x = xy;
-    y = xy;
+    this->x = xy;
+    this->y = xy;
 }
 
 SR_Vec2f::SR_Vec2f(float x, float y)
@@ -24,14 +24,12 @@ SR_Vec2f::SR_Vec2f(float x, float y)
 
 SR_Vec2f::SR_Vec2f(const SR_Vec2f &v)
 {
-    x = v.x;
-    y = v.y;
+    this->x = v.x;
+    this->y = v.y;
 }
 
 SR_Vec2f::~SR_Vec2f()
 {
-    x = 0.0f;
-    y = 0.0f;
 }
 
 //---------------------------------------------------------
@@ -73,8 +71,8 @@ SR_Vec2f & SR_Vec2f::operator=(const SR_Vec2f &v)
         return *this;
     }
 
-    x = v.x;
-    y = v.y;
+    this->x = v.x;
+    this->y = v.y;
 
     return *this;
 }

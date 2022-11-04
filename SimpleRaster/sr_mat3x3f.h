@@ -1,5 +1,5 @@
-#ifndef __SR_MAT3F_H__
-#define __SR_MAT3F_H__
+#ifndef __SR_MAT3X3F_H__
+#define __SR_MAT3X3F_H__
 
 #include "sr_vec3f.h"
 
@@ -30,6 +30,9 @@ public:
     // 逆矩阵
     static SR_Mat3x3f inverse(const SR_Mat3x3f &mat);
 
+    // 求 3 x 3 行列式
+    static float determinant(const SR_Mat3x3f &mat);
+
 public:
     SR_Mat3x3f & operator=(const SR_Mat3x3f &v);
 
@@ -56,6 +59,9 @@ public:
 public:
     // 转置矩阵
     SR_Mat3x3f transpose() const;
+
+    // 求 3 x 3 行列式值
+    float determinant() const;
 
     // 打印矩阵
     void printValue(const char *title = nullptr) const;
@@ -86,4 +92,4 @@ public:
 
 //-----------------------------------------------------------------------------
 
-#endif // __SR_MAT3F_H__
+#endif // __SR_MAT3X3F_H__

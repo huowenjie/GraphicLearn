@@ -1,6 +1,8 @@
 #ifndef __SR_VEC3F_H__
 #define __SR_VEC3F_H__
 
+#include "sr_vec2f.h"
+
 //-----------------------------------------------------------------------------
 // 3 维向量
 //-----------------------------------------------------------------------------
@@ -10,6 +12,7 @@ class SR_Vec3f
 public:
     SR_Vec3f();
     SR_Vec3f(float xyz);
+    SR_Vec3f(const SR_Vec2f &v, float z = 0.0f);
     SR_Vec3f(float x, float y, float z);
     SR_Vec3f(const SR_Vec3f &v);
     ~SR_Vec3f();

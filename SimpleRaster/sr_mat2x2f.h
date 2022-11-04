@@ -30,6 +30,9 @@ public:
     // 逆矩阵
     static SR_Mat2x2f inverse(const SR_Mat2x2f &mat);
 
+    // 2 x 2 行列式值
+    static float determinant(const SR_Mat2x2f &mat);
+
 public:
     SR_Mat2x2f & operator=(const SR_Mat2x2f &mat);
 
@@ -56,6 +59,9 @@ public:
 public:
     // 转置矩阵
     SR_Mat2x2f transpose() const;
+
+    // 求 2x2 行列式
+    float determinant() const;
 
     // 打印矩阵
     void printValue(const char *title = nullptr) const;

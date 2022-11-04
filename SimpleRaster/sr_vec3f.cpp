@@ -6,16 +6,23 @@
 
 SR_Vec3f::SR_Vec3f()
 {
-    x = 0.0f;
-    y = 0.0f;
-    z = 0.0f;
+    this->x = 0.0f;
+    this->y = 0.0f;
+    this->z = 0.0f;
 }
 
 SR_Vec3f::SR_Vec3f(float xyz)
 {
-    x = xyz;
-    y = xyz;
-    z = xyz;
+    this->x = xyz;
+    this->y = xyz;
+    this->z = xyz;
+}
+
+SR_Vec3f::SR_Vec3f(const SR_Vec2f &v, float z)
+{
+    this->x = v.x;
+    this->y = v.y;
+    this->z = z;
 }
 
 SR_Vec3f::SR_Vec3f(float x, float y, float z)
@@ -27,16 +34,13 @@ SR_Vec3f::SR_Vec3f(float x, float y, float z)
 
 SR_Vec3f::SR_Vec3f(const SR_Vec3f &v)
 {
-    x = v.x;
-    y = v.y;
-    z = v.z;
+    this->x = v.x;
+    this->y = v.y;
+    this->z = v.z;
 }
 
 SR_Vec3f::~SR_Vec3f()
 {
-    x = 0.0f;
-    y = 0.0f;
-    z = 0.0f;
 }
 
 //---------------------------------------------------------
@@ -88,9 +92,9 @@ SR_Vec3f & SR_Vec3f::operator=(const SR_Vec3f &v)
         return *this;
     }
 
-    x = v.x;
-    y = v.y;
-    z = v.z;
+    this->x = v.x;
+    this->y = v.y;
+    this->z = v.z;
 
     return *this;
 }
@@ -146,7 +150,7 @@ SR_Vec3f SR_Vec3f::operator/(float t) const
         return SR_Vec3f();
     }
 
-    SR_Vec3f vec = *this;
+    SR_Vec3f vec(*this);
     vec.x /= t;
     vec.y /= t;
     vec.z /= t;

@@ -46,10 +46,6 @@ SR_Mat2x2f::SR_Mat2x2f(const SR_Mat2x2f &mat)
 
 SR_Mat2x2f::~SR_Mat2x2f()
 {
-    this->m00 = 0.0f;
-    this->m01 = 0.0f;
-    this->m10 = 0.0f;
-    this->m11 = 0.0f;
 }
 
 SR_Mat2x2f SR_Mat2x2f::unitMatrix()
@@ -87,6 +83,11 @@ SR_Mat2x2f SR_Mat2x2f::inverse(const SR_Mat2x2f &mat)
 
     det = 1.0f / det;
     return tmp * det;
+}
+
+float SR_Mat2x2f::determinant(const SR_Mat2x2f &mat)
+{
+    return mat.m00 * mat.m11 - mat.m01 * mat.m10;
 }
 
 SR_Mat2x2f & SR_Mat2x2f::operator=(const SR_Mat2x2f &mat)
@@ -185,6 +186,11 @@ SR_Mat2x2f SR_Mat2x2f::operator-() const
 SR_Mat2x2f SR_Mat2x2f::transpose() const
 {
     return SR_Mat2x2f::transpose(*this);
+}
+
+float SR_Mat2x2f::determinant() const
+{
+    return SR_Mat2x2f::determinant(*this);
 }
 
 void SR_Mat2x2f::printValue(const char *title) const
