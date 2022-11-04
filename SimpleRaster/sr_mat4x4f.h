@@ -17,6 +17,42 @@ public:
     SR_Mat4x4f(const SR_Mat4x4f &mat);
     ~SR_Mat4x4f();
 
+public: // 常用的 3D 线性变换矩阵
+
+    // 缩放变换
+    static SR_Mat4x4f scaleMatrix(float sx, float sy, float sz);
+
+    // 围绕 z 轴的旋转的旋转矩阵
+    static SR_Mat4x4f rotateZMatrix(float theta);
+
+    // 围绕 X 轴的旋转的旋转矩阵
+    static SR_Mat4x4f rotateXMatrix(float theta);
+
+    // 围绕 Y 轴的旋转的旋转矩阵
+    static SR_Mat4x4f rotateYMatrix(float theta);
+
+    // 平移矩阵
+    static SR_Mat4x4f translateMatrix(float dx, float dy, float dz);
+
+    /**
+     * 窗口投影矩阵
+     * 将 [xl, xh] x [yl, yh] x [zl, zh] 投影到 [xpl, xph] x [ypl, yph] x [zpl, zph]
+     * 
+     * l 和 h 构成了待变换窗口的包围盒
+     * lp 和 hp 构成了目标窗口的包围盒
+     * 
+     * l 的值为 xmin ymin zmin
+     * h 的值为 xmax ymax zmax
+     * 
+     * lp 和 hp 同理
+     */
+    static SR_Mat4x4f windowBoxMapMatrix(
+        const SR_Vec3f &l,
+        const SR_Vec3f &h,
+        const SR_Vec3f &lp,
+        const SR_Vec3f &hp
+    );
+
 public:
     // 单位矩阵
     static SR_Mat4x4f unitMatrix();

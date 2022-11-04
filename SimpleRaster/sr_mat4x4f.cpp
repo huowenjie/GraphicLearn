@@ -87,6 +87,87 @@ SR_Mat4x4f::~SR_Mat4x4f()
 {
 }
 
+//-----------------------------------------------------------------------------
+
+SR_Mat4x4f SR_Mat4x4f::scaleMatrix(float sx, float sy, float sz)
+{
+    SR_Mat4x4f tmp;
+
+    tmp.m00 = sx;
+    tmp.m11 = sx;
+    tmp.m22 = sx;
+
+    return tmp;
+}
+
+SR_Mat4x4f SR_Mat4x4f::rotateZMatrix(float theta)
+{
+    SR_Mat4x4f tmp;
+
+    tmp.m00 = std::cos(theta);
+    tmp.m01 = -std::sin(theta);
+    tmp.m10 = std::sin(theta);
+    tmp.m11 = std::cos(theta);
+
+    return tmp;
+}
+
+SR_Mat4x4f SR_Mat4x4f::rotateXMatrix(float theta)
+{
+    SR_Mat4x4f tmp;
+
+    tmp.m11 = std::cos(theta);
+    tmp.m12 = -std::sin(theta);
+    tmp.m21 = std::sin(theta);
+    tmp.m22 = std::cos(theta);
+
+    return tmp;
+}
+
+SR_Mat4x4f SR_Mat4x4f::rotateYMatrix(float theta)
+{
+    SR_Mat4x4f tmp;
+
+    tmp.m00 = std::cos(theta);
+    tmp.m20 = -std::sin(theta);
+    tmp.m02 = std::sin(theta);
+    tmp.m22 = std::cos(theta);
+
+    return tmp;
+}
+
+SR_Mat4x4f SR_Mat4x4f::translateMatrix(float dx, float dy, float dz)
+{
+    SR_Mat4x4f tmp;
+
+    tmp.m03 = dx;
+    tmp.m13 = dy;
+    tmp.m23 = dz;
+
+    return tmp;
+}
+
+SR_Mat4x4f SR_Mat4x4f::windowBoxMapMatrix(
+    const SR_Vec3f &l,
+    const SR_Vec3f &h,
+    const SR_Vec3f &lp,
+    const SR_Vec3f &hp
+)
+{
+    SR_Mat4x4f tmp;
+
+    tmp.m00 = (hp.x - lp.x) / (h.x - l.x);
+    tmp.m11 = (hp.y - lp.y) / (h.y - l.y);
+    tmp.m22 = (hp.z - lp.z) / (h.z - l.z);
+    tmp.m03 = (lp.x * h.x - hp.x * l.x) / (h.x - l.x);
+    tmp.m13 = (lp.y * h.y - hp.y * l.y) / (h.y - l.y);
+    tmp.m23 = (lp.z * h.z - hp.z * l.z) / (h.z - l.z);
+
+    return tmp;
+}
+
+//-----------------------------------------------------------------------------
+
 SR_Mat4x4f SR_Mat4x4f::unitMatrix()
 {
     return SR_Mat4x4f();

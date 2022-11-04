@@ -17,12 +17,15 @@ public:
     SR_Mat3x3f(const SR_Mat3x3f &mat);
     ~SR_Mat3x3f();
 
-public:
+public: // 特殊矩阵
+
     // 单位矩阵
     static SR_Mat3x3f unitMatrix();
 
     // 零矩阵
     static SR_Mat3x3f zeroMatrix();
+
+public: // 矩阵的基本操作
 
     // 转置矩阵
     static SR_Mat3x3f transpose(const SR_Mat3x3f &mat);
