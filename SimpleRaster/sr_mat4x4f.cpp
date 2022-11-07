@@ -147,7 +147,7 @@ SR_Mat4x4f SR_Mat4x4f::translateMatrix(float dx, float dy, float dz)
     return tmp;
 }
 
-SR_Mat4x4f SR_Mat4x4f::windowBoxMapMatrix(
+SR_Mat4x4f SR_Mat4x4f::volumeMapMatrix(
     const SR_Vec3f &l,
     const SR_Vec3f &h,
     const SR_Vec3f &lp,
@@ -164,6 +164,67 @@ SR_Mat4x4f SR_Mat4x4f::windowBoxMapMatrix(
     tmp.m23 = (lp.z * h.z - hp.z * l.z) / (h.z - l.z);
 
     return tmp;
+}
+
+SR_Mat4x4f SR_Mat4x4f::viewportMatrix(int width, int height)
+{
+    SR_Mat4x4f tmp;
+    float nx = width;
+    float ny = height;
+
+    tmp.m00 = nx / 2.0f;
+    tmp.m11 = ny / 2.0f;
+    tmp.m03 = (nx - 1.0f) / 2.0f;
+    tmp.m13 = (ny - 1.0f) / 2.0f;
+
+    return tmp;
+}
+
+
+SR_Mat4x4f SR_Mat4x4f::cameraMatrix(const SR_Vec4f &pos, const SR_Vec4f &target)
+{
+    SR_Vec4f z = SR_Vec4f(0.0f, 1.0f, 0.0f, 0.0f);
+    SR_Vec4f w = pos - target;
+    w.normalize();
+
+    SR_Vec4f u = z.cross(w);
+    u.normalize();
+
+    SR_Vec4f v = w.cross(u);
+    v.normalize();
+
+    SR_Mat4x4f cam;
+
+    cam.m00 = u.x;
+    cam.m01 = u.y;
+    cam.m02 = u.z;
+    cam.m03 = -pos.x;
+
+    cam.m10 = v.x;
+    cam.m11 = v.y;
+    cam.m12 = v.z;
+    cam.m13 = -pos.y;
+
+    cam.m20 = w.x;
+    cam.m21 = w.y;
+    cam.m22 = w.z;
+    cam.m23 = -pos.z;
+
+    return cam;
+}
+
+SR_Mat4x4f SR_Mat4x4f::perspectiveMatrix(float fov, float aspect, float near, float far)
+{
+    SR_Mat4x4f per;
+
+    per.m00 = 1.0f / (tanf(fov) * aspect);
+	per.m11 = 1.0f / tanf(fov);
+	per.m22 = (near + far) / (near - far);
+	per.m23 = 2.0f * near * far / (near - far);
+	per.m32 = -1.0f;
+	per.m33 = 0.0f;
+
+    return per;
 }
 
 //-----------------------------------------------------------------------------

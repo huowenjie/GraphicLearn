@@ -35,7 +35,7 @@ public: // 常用的 3D 线性变换矩阵
     static SR_Mat4x4f translateMatrix(float dx, float dy, float dz);
 
     /**
-     * 窗口投影矩阵
+     * 体积盒投影矩阵
      * 将 [xl, xh] x [yl, yh] x [zl, zh] 投影到 [xpl, xph] x [ypl, yph] x [zpl, zph]
      * 
      * l 和 h 构成了待变换窗口的包围盒
@@ -46,12 +46,38 @@ public: // 常用的 3D 线性变换矩阵
      * 
      * lp 和 hp 同理
      */
-    static SR_Mat4x4f windowBoxMapMatrix(
+    static SR_Mat4x4f volumeMapMatrix(
         const SR_Vec3f &l,
         const SR_Vec3f &h,
         const SR_Vec3f &lp,
         const SR_Vec3f &hp
     );
+
+    /**
+     * 将标准化坐标投影到屏幕空间-视口变换
+     * 
+     * width 屏幕宽度（像素）
+     * height 屏幕高度（像素）
+     */
+    static SR_Mat4x4f viewportMatrix(int width, int height);
+
+    /**
+     * 摄像机视觉变换矩阵
+     * 
+     * pos 摄像机位置
+     * target 目标位置
+     */
+    static SR_Mat4x4f cameraMatrix(const SR_Vec4f &pos, const SR_Vec4f &target);
+
+    /**
+     * 透视投影矩阵
+     * 
+     * fov 视角（弧度）
+     * aspect 窗口纵横比
+     * near 近平面值
+     * far 远平面值
+     */
+    static SR_Mat4x4f perspectiveMatrix(float fov, float aspect, float near, float far);
 
 public:
     // 单位矩阵

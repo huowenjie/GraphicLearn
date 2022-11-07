@@ -18,21 +18,32 @@ public:
     SR_Window(int width = 480, int height = 360);
     ~SR_Window();
 
+public:
+
     bool initialize();
     bool terminate();
 
+    void setUpdate(void (*update)(SR_Window &));
+
+    // 绘制像素
+    void drawPixel(const SR_Vec2f &pos, const SR_Color &color);
+
+    // 画线
+    void drawLine(const SR_Vec2f &a, const SR_Vec2f &b, const SR_Color &color);
+
+    // 帧渲染
     void render();
 
 public:
-    // 设置回调，visitPixel 的参数分别为 x、y、color
-    void setForeachPixelCallback(
-        void (*visitPixel)(const SR_Vec2f &, const SR_Vec2f &, SR_Color &)
-    );
+    int getWidth() const;
+    int getHeight() const;
 
 private:
     SR_WinCtx *info;
     int winWidth;
     int winHeight;
+
+    void (*update)(SR_Window &);
 };
 
 //-----------------------------------------------------------------------------
