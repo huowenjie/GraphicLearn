@@ -197,6 +197,16 @@ void SR_Vec4f::normalize()
     *this = SR_Vec4f::normalize(*this);
 }
 
+void SR_Vec4f::homogeneous()
+{
+    if (std::abs(w) > 1e-6) {
+		x /= w;
+        y /= w;
+        z /= w;
+        w = 1.0f;
+	}
+}
+
 void SR_Vec4f::printValue(const char *title) const
 {
     if (!title || !title[0]) {

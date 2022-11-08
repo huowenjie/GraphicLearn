@@ -31,6 +31,16 @@ public:
     // 画线
     void drawLine(const SR_Vec2f &a, const SR_Vec2f &b, const SR_Color &color);
 
+    // 填充三角形
+    void fillTriangle(
+        const SR_Vec2f &a,
+        const SR_Vec2f &b,
+        const SR_Vec2f &c,
+        const SR_Color &ca,
+        const SR_Color &cb,
+        const SR_Color &cc
+    );
+
     // 帧渲染
     void render();
 

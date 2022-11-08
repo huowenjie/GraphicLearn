@@ -213,16 +213,19 @@ SR_Mat4x4f SR_Mat4x4f::cameraMatrix(const SR_Vec4f &pos, const SR_Vec4f &target)
     return cam;
 }
 
-SR_Mat4x4f SR_Mat4x4f::perspectiveMatrix(float fov, float aspect, float near, float far)
+SR_Mat4x4f SR_Mat4x4f::perspectiveMatrix(const SR_Vec3f &l, const SR_Vec3f &h)
 {
     SR_Mat4x4f per;
 
-    per.m00 = 1.0f / (tanf(fov) * aspect);
-	per.m11 = 1.0f / tanf(fov);
-	per.m22 = (near + far) / (near - far);
-	per.m23 = 2.0f * near * far / (near - far);
-	per.m32 = -1.0f;
-	per.m33 = 0.0f;
+    per.m33 = 0.0f;
+    per.m32 = 1.0f;
+
+    per.m00 = l.z * 2.0f / (h.x - l.x);
+    per.m02 = (l.x + h.x) / (l.x - h.x);
+    per.m11 = l.z * 2.0f / (h.y - l.y);
+    per.m12 = (l.y + h.y) / (l.y - h.y);
+    per.m22 = (l.z + h.z) / (l.z - h.z);
+    per.m23 = 2.0 * l.z * h.z / (h.z - l.z);
 
     return per;
 }

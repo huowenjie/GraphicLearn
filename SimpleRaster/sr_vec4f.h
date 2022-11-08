@@ -68,6 +68,9 @@ public:
     // 将当前向量归一化
     void normalize();
 
+    // 点齐次化
+    void homogeneous();
+
     // 打印向量
     void printValue(const char *title = nullptr) const;
 
