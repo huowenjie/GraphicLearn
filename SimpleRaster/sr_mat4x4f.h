@@ -67,7 +67,7 @@ public: // 常用的 3D 线性变换矩阵
      * pos 摄像机位置
      * target 目标位置
      */
-    static SR_Mat4x4f cameraMatrix(const SR_Vec4f &pos, const SR_Vec4f &target);
+    static SR_Mat4x4f cameraMatrix(const SR_Vec3f &pos, const SR_Vec3f &target);
 
     /**
      * 透视投影矩阵

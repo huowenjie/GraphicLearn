@@ -84,6 +84,11 @@ SR_Vec3f SR_Vec3f::normalize(const SR_Vec3f &v)
     return std::abs(len) > 1e-6 ? (v / len) : SR_Vec3f(0.0f);
 }
 
+SR_Vec3f SR_Vec3f::lerp(const SR_Vec3f &a, const SR_Vec3f &b, float t)
+{
+    return a * (1.0f - t) + b * t;
+}
+
 //---------------------------------------------------------
 
 SR_Vec3f & SR_Vec3f::operator=(const SR_Vec3f &v)

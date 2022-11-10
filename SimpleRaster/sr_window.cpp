@@ -337,6 +337,7 @@ void SR_Window::fillTriangle(
     float fb = 0.0f;
     float fc = 0.0f;
 
+#if 0
     if (a.x > winWidth - 1 || a.x < 0 ||
         b.x > winWidth - 1 || b.x < 0 ||
         c.x > winWidth - 1 || c.x < 0) {
@@ -348,6 +349,7 @@ void SR_Window::fillTriangle(
         c.y > winHeight - 1 || c.y < 0) {
         return;
     }
+#endif
 
     /*
      * 1.确定三角形的包围盒 xmin xmax ymin ymax；

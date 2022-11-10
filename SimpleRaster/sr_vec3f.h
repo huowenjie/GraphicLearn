@@ -33,6 +33,9 @@ public:
     // 向量归一化并返回一个新向量
     static SR_Vec3f normalize(const SR_Vec3f &v);
 
+    // p = (1 - t) * a + t * b 当 t = 0 时返回 a，否则返回 b
+    static SR_Vec3f lerp(const SR_Vec3f &a, const SR_Vec3f &b, float t);
+
 public:
     SR_Vec3f & operator=(const SR_Vec3f &v);
 

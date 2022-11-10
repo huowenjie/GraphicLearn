@@ -73,6 +73,11 @@ SR_Color SR_Color::fromUintRGB(unsigned int rgb)
     return color;
 }
 
+SR_Color SR_Color::lerp(const SR_Color &a, const SR_Color &b, float t)
+{
+    return a * (1.0f - t) + b * t;
+}
+
 SR_Color & SR_Color::operator=(const SR_Color &c)
 {
     if (&c == this) {

@@ -181,16 +181,16 @@ SR_Mat4x4f SR_Mat4x4f::viewportMatrix(int width, int height)
 }
 
 
-SR_Mat4x4f SR_Mat4x4f::cameraMatrix(const SR_Vec4f &pos, const SR_Vec4f &target)
+SR_Mat4x4f SR_Mat4x4f::cameraMatrix(const SR_Vec3f &pos, const SR_Vec3f &target)
 {
-    SR_Vec4f z = SR_Vec4f(0.0f, 1.0f, 0.0f, 0.0f);
-    SR_Vec4f w = pos - target;
+    SR_Vec3f z = SR_Vec3f(0.0f, 1.0f, 0.0f);
+    SR_Vec3f w = pos - target;
     w.normalize();
 
-    SR_Vec4f u = z.cross(w);
+    SR_Vec3f u = z.cross(w);
     u.normalize();
 
-    SR_Vec4f v = w.cross(u);
+    SR_Vec3f v = w.cross(u);
     v.normalize();
 
     SR_Mat4x4f cam;

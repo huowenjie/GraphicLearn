@@ -53,6 +53,7 @@ public:
 private:
     std::vector<SR_TriangleIndexList> indexArray;
     std::vector<SR_Vec3f> vertexArray;
+    std::vector<SR_Color> colorArray;
 };
 
 //-----------------------------------------------------------------------------

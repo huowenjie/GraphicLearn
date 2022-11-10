@@ -4,9 +4,13 @@
 #include "sr_vec3f.h"
 
 //-----------------------------------------------------------------------------
-// 3 维齐次向量
+// 3 维齐次向量或 4 维向量
 //-----------------------------------------------------------------------------
 
+/**
+ * 4 维向量没有 3 维向量中点乘、叉乘等的方法。其主要用于 3维仿射变换和 NDC 裁剪，平常对
+ * 于顶点或者模型的操作还是应以 SR_Vec3f 或者 SR_Vec2f 为主
+ */
 class SR_Vec4f
 {
 public:
@@ -18,58 +22,28 @@ public:
     ~SR_Vec4f();
 
 public:
-    // 向量点乘，v1 或 v2 一律按照向量来处理
-    static float dot(const SR_Vec4f &v1, const SR_Vec4f &v2);
-
-    // 向量叉乘，v1 或 v2 一律按照向量来处理
-    static SR_Vec4f cross(const SR_Vec4f &v1, const SR_Vec4f &v2);
-
-    // 向量叉乘的模，v1 或 v2 一律按照向量来处理
-    static float crossValue(const SR_Vec4f &v1, const SR_Vec4f &v2);
-
-    // 求向量的夹角，弧度，v1 或 v2 一律按照向量来处理
-    static float angle(const SR_Vec4f &v1, const SR_Vec4f &v2);
-
-    // 向量归一化并返回一个新向量
-    static SR_Vec4f normalize(const SR_Vec4f &v);
+    // p = (1 - t) * a + t * b 当 t = 0 时返回 a，否则返回 b
+    static SR_Vec4f lerp(const SR_Vec4f &a, const SR_Vec4f &b, float t);
 
 public:
     SR_Vec4f & operator=(const SR_Vec4f &v);
 
-    // 向量加法和减法, w 分量不做处理
+    // 向量加法和减法
     SR_Vec4f operator+(const SR_Vec4f &v) const;
     SR_Vec4f operator-(const SR_Vec4f &v) const;
 
-    // 取反向量, w 分量不做处理
+    // 取反向量
     SR_Vec4f operator-() const;
 
-    // 向量和实数相乘, w 分量不做处理
+    // 向量和实数相乘
     SR_Vec4f operator*(float t) const;
     friend SR_Vec4f operator*(float t, const SR_Vec4f &v);
 
-    // 向量和实数相除, w 分量不做处理
+    // 向量和实数相除
     SR_Vec4f operator/(float t) const;
 
-    // 向量长度
-    float length() const;
-
-    // 向量点乘，v 按向量处理
-    float dot(const SR_Vec4f &v) const;
-
-    // 和另一个向量的夹角，v 按向量处理
-    float angle(const SR_Vec4f &v) const;
-
-    // 和另一个向量叉乘的值，v 按向量处理
-    float crossValue(const SR_Vec4f &v) const;
-
-    // 向量叉乘，v 按向量处理
-    SR_Vec4f cross(const SR_Vec4f &v) const;
-
-    // 将当前向量归一化
-    void normalize();
-
-    // 点齐次化
-    void homogeneous();
+    // 齐次除法
+    void homogenDivide();
 
     // 打印向量
     void printValue(const char *title = nullptr) const;

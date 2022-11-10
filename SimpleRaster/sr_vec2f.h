@@ -27,6 +27,9 @@ public:
     // 向量归一化并返回一个新向量
     static SR_Vec2f normalize(const SR_Vec2f &v);
 
+    // p = (1 - t) * a + t * b 当 t = 0 时返回 a，否则返回 b
+    static SR_Vec2f lerp(const SR_Vec2f &a, const SR_Vec2f &b, float t);
+
 public:
     SR_Vec2f & operator=(const SR_Vec2f &v);
 

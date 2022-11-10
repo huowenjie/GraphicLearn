@@ -22,6 +22,9 @@ public:
 public:
     static SR_Color fromUintRGB(unsigned int rgb);
 
+    // p = (1 - t) * a + t * b 当 t = 0 时返回 a，否则返回 b
+    static SR_Color lerp(const SR_Color &a, const SR_Color &b, float t);
+
 public:
     SR_Color & operator=(const SR_Color &c);
 

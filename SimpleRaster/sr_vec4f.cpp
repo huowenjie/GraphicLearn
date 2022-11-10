@@ -48,50 +48,9 @@ SR_Vec4f::~SR_Vec4f()
 {
 }
 
-float SR_Vec4f::dot(const SR_Vec4f &v1, const SR_Vec4f &v2)
+SR_Vec4f SR_Vec4f::lerp(const SR_Vec4f &a, const SR_Vec4f &b, float t)
 {
-    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-}
-
-SR_Vec4f SR_Vec4f::cross(const SR_Vec4f &v1, const SR_Vec4f &v2)
-{
-    return SR_Vec4f(
-        v1.y * v2.z - v1.z * v2.y,
-        v1.z * v2.x - v1.x * v2.z,
-        v1.x * v2.y - v1.y * v2.x,
-        0.0f
-    );
-}
-
-float SR_Vec4f::crossValue(const SR_Vec4f &v1, const SR_Vec4f &v2)
-{
-    SR_Vec4f vp = SR_Vec4f::cross(v1, v2);
-    return vp.length();
-}
-
-float SR_Vec4f::angle(const SR_Vec4f &v1, const SR_Vec4f &v2)
-{
-    float len = v1.length() * v2.length();
-
-    if (std::abs(len) < 1e-6) {
-        return 0.0f;
-    }
-
-    float tmp = v1.dot(v2) / (len);
-    return std::acos(tmp);
-}
-
-SR_Vec4f SR_Vec4f::normalize(const SR_Vec4f &v)
-{
-    float len = v.length();
-
-    if (std::abs(len) < 1e-6) {
-        return SR_Vec4f();
-    }
-
-    return SR_Vec4f(
-        v.x / len, v.y / len, v.z / len, 0.0f
-    );
+    return a * (1.0f - t) + b * t;
 }
 
 SR_Vec4f & SR_Vec4f::operator=(const SR_Vec4f &v)
@@ -114,6 +73,7 @@ SR_Vec4f SR_Vec4f::operator+(const SR_Vec4f &v) const
     vec.x += v.x;
     vec.y += v.y;
     vec.z += v.z;
+    vec.w += v.w;
     return vec;
 }
 
@@ -123,6 +83,7 @@ SR_Vec4f SR_Vec4f::operator-(const SR_Vec4f &v) const
     vec.x -= v.x;
     vec.y -= v.y;
     vec.z -= v.z;
+    vec.w -= v.w;
     return vec;
 }
 
@@ -132,6 +93,7 @@ SR_Vec4f SR_Vec4f::operator-() const
     vec.x = -vec.x;
     vec.y = -vec.y;
     vec.z = -vec.z;
+    vec.w = -vec.w;
     return vec;
 }
 
@@ -141,6 +103,7 @@ SR_Vec4f SR_Vec4f::operator*(float t) const
     vec.x *= t;
     vec.y *= t;
     vec.z *= t;
+    vec.w *= t;
     return vec;
 }
 
@@ -150,6 +113,7 @@ SR_Vec4f operator*(float t, const SR_Vec4f &v)
     vec.x *= t;
     vec.y *= t;
     vec.z *= t;
+    vec.w *= t;
     return vec;
 }
 
@@ -163,48 +127,20 @@ SR_Vec4f SR_Vec4f::operator/(float t) const
     vec.x /= t;
     vec.y /= t;
     vec.z /= t;
+    vec.w /= t;
     return vec;
 }
 
-float SR_Vec4f::length() const
+void SR_Vec4f::homogenDivide()
 {
-    float val = x * x + y * y + z * z;
-    return std::sqrt(val);
-}
+    if (std::abs(w) < 1e-6) {
+        return;
+    }
 
-float SR_Vec4f::dot(const SR_Vec4f &v) const
-{
-    return SR_Vec4f::dot(*this, v);
-}
-
-float SR_Vec4f::angle(const SR_Vec4f &v) const
-{
-    return SR_Vec4f::angle(*this, v);
-}
-
-float SR_Vec4f::crossValue(const SR_Vec4f &v) const
-{
-    return SR_Vec4f::crossValue(*this, v);
-}
-
-SR_Vec4f SR_Vec4f::cross(const SR_Vec4f &v) const
-{
-    return SR_Vec4f::cross(*this, v);
-}
-
-void SR_Vec4f::normalize()
-{
-    *this = SR_Vec4f::normalize(*this);
-}
-
-void SR_Vec4f::homogeneous()
-{
-    if (std::abs(w) > 1e-6) {
-		x /= w;
-        y /= w;
-        z /= w;
-        w = 1.0f;
-	}
+    x /= w;
+    y /= w;
+    z /= w;
+    w = 1.0f;
 }
 
 void SR_Vec4f::printValue(const char *title) const
