@@ -8,15 +8,15 @@
 //-----------------------------------------------------------------------------
 
 /**
- * 4 维向量没有 3 维向量中点乘、叉乘等的方法。其主要用于 3维仿射变换和 NDC 裁剪，平常对
- * 于顶点或者模型的操作还是应以 SR_Vec3f 或者 SR_Vec2f 为主
+ * 4 维向量没有 3 维向量中点乘、叉乘等的方法。其主要用于 3 维仿射变换和齐次空间的裁剪，
+ * 平常对于顶点或者模型的操作还是应以 SR_Vec3f 或者 SR_Vec2f 为主
  */
 class SR_Vec4f
 {
 public:
     SR_Vec4f();
     SR_Vec4f(float xyz, float w);
-    SR_Vec4f(const SR_Vec3f &v, float w = 0.0f);
+    SR_Vec4f(const SR_Vec3f &v, float w = 1.0f);
     SR_Vec4f(float x, float y, float z, float w);
     SR_Vec4f(const SR_Vec4f &v);
     ~SR_Vec4f();

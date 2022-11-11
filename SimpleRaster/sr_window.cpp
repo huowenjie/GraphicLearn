@@ -409,6 +409,119 @@ void SR_Window::fillTriangle(
     }
 }
 
+SR_IndexMesh SR_Window::clipTriangle(
+    const SR_Vec4f &n,
+    const SR_VertexInfo &a,
+    const SR_VertexInfo &b,
+    const SR_VertexInfo &c
+)
+{
+    SR_IndexMesh mesh;
+
+    float da = pointToPlane(n, a.vertex);
+    float db = pointToPlane(n, b.vertex);
+    float dc = pointToPlane(n, c.vertex);
+
+    if (da > 0.0f && db > 0.0f && dc > 0.0f) {
+        // 全部在平面外，不渲染
+        return mesh;
+    }
+
+    if (
+        (da <= 0.0f && db  > 0.0f && dc  > 0.0f) ||
+        (da  > 0.0f && db <= 0.0f && dc  > 0.0f) ||
+        (da  > 0.0f && db  > 0.0f && dc <= 0.0f)
+    ) {
+        // 三角形三个点全部按照顺时针方向考虑
+        // 有两个点在裁剪平面外则裁剪为一个三角形
+        // 首先找到在裁剪平面内的点 v0
+        SR_Vec4f v0; float d0 = 0.0f; SR_Color c0;
+        SR_Vec4f v1; float d1 = 0.0f; SR_Color c1;
+        SR_Vec4f v2; float d2 = 0.0f; SR_Color c2;
+
+        if (da <= 0.0) {
+            v0 = a.vertex; d0 = da; c0 = a.color;
+            v1 = b.vertex; d1 = db; c1 = b.color;
+            v2 = c.vertex; d2 = dc; c2 = c.color;
+        } else if (db <= 0.0f) {
+            v0 = b.vertex; d0 = db; c0 = b.color;
+            v1 = c.vertex; d1 = dc; c1 = c.color;
+            v2 = a.vertex; d2 = da; c2 = a.color;
+        } else {
+            v0 = c.vertex; d0 = dc; c0 = c.color;
+            v1 = a.vertex; d1 = da; c1 = a.color;
+            v2 = b.vertex; d2 = db; c2 = b.color;
+        }
+
+        // p = a * tb + b * ta 且 tb = 1.0 - ta
+        float ta = d0 / (d0 - d1);
+        float tb = d0 / (d0 - d2);
+
+        // 在齐次空间下通过线性插值求交点 insA、insB
+        // 求出交点后，新的三角形为 v0-insA-insB
+        mesh.addVertex(v0, c0);
+        mesh.addVertex(SR_Vec4f::lerp(v0, v1, ta), SR_Color::lerp(c0, c1, ta));
+        mesh.addVertex(SR_Vec4f::lerp(v0, v2, tb), SR_Color::lerp(c0, c2, tb));
+        mesh.addIndexList(0, 1, 2);
+
+        return mesh;
+    }
+
+    if (
+        (da  > 0.0f && db <= 0.0f && dc <= 0.0f) ||
+        (da <= 0.0f && db  > 0.0f && dc <= 0.0f) ||
+        (da <= 0.0f && db <= 0.0f && dc  > 0.0f)
+    ) {
+        // 三角形三个点全部按照顺时针方向考虑
+        // 有一个点在裁剪平面外则裁剪为一个由两个三角形组成的四边形
+        // 首先找到在裁剪平面外的点 v0
+        SR_Vec4f v0; float d0 = 0.0f; SR_Color c0;
+        SR_Vec4f v1; float d1 = 0.0f; SR_Color c1;
+        SR_Vec4f v2; float d2 = 0.0f; SR_Color c2;
+
+        if (da > 0.0) {
+            v0 = a.vertex; d0 = da; c0 = a.color;
+            v1 = b.vertex; d1 = db; c1 = b.color;
+            v2 = c.vertex; d2 = dc; c2 = c.color;
+        } else if (db > 0.0f) {
+            v0 = b.vertex; d0 = db; c0 = b.color;
+            v1 = c.vertex; d1 = dc; c1 = c.color;
+            v2 = a.vertex; d2 = da; c2 = a.color;
+        } else {
+            v0 = c.vertex; d0 = dc; c0 = c.color;
+            v1 = a.vertex; d1 = da; c1 = a.color;
+            v2 = b.vertex; d2 = db; c2 = b.color;
+        }
+
+        // 三角形 abc a在外部，那么 ab ac 和裁剪平面的交点分别为 insA，insB
+        // 那么原有的三角形被拆分为 insA-b-c 和 c-insB-insA
+        float ta = d0 / (d0 - d1);
+        float tb = d0 / (d0 - d2);
+
+        // 分别是 insA - b - c - insB
+        mesh.addVertex(SR_Vec4f::lerp(v0, v1, ta), SR_Color::lerp(c0, c1, ta));
+        mesh.addVertex(v1, c1);
+        mesh.addVertex(v2, c2);
+        mesh.addVertex(SR_Vec4f::lerp(v0, v2, tb), SR_Color::lerp(c0, c2, tb));
+
+        mesh.addIndexList(0, 1, 2);
+        mesh.addIndexList(2, 3, 0);
+        return mesh;
+    }
+
+    // 剩下就是全部顶点在裁剪平面内的情况
+    mesh.addVertex(a);
+    mesh.addVertex(b);
+    mesh.addVertex(c);
+    mesh.addIndexList(0, 1, 2);
+    return mesh;
+}
+
+float SR_Window::pointToPlane(const SR_Vec4f &n, const SR_Vec4f &p)
+{
+    return n.x * p.x + n.y * p.y + n.z * p.z + n.w * p.w;
+}
+
 void SR_Window::render()
 {
     SDL_Texture *texture = nullptr;
