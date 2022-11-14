@@ -47,8 +47,14 @@ void update(SR_Window &window)
     mesh.addVertex(SR_Vec3f(0.5f, -0.5f, 0.5f), SR_Color(0.0f, 1.0f, 0.0f));
     mesh.addVertex(SR_Vec3f(0.5f, -0.5f, -0.5f), SR_Color(1.0f, 0.0f, 0.0f));
     mesh.addVertex(SR_Vec3f(-0.5f, -0.5f, -0.5f), SR_Color(0.0f, 1.0f, 0.0f));
+
+    mesh.addVertex(SR_Vec3f(-0.5f, -1.0f, 0.0f), SR_Color(0.0f, 1.0f, 1.0f));
+    mesh.addVertex(SR_Vec3f(0.5f, -1.0f, 0.0f), SR_Color(0.0f, 1.0f, 1.0f));
+    mesh.addVertex(SR_Vec3f(0.0f, 0.0f, 0.0f), SR_Color(0.0f, 1.0f, 1.0f));
+
     mesh.addIndexList(0, 1, 2);
     mesh.addIndexList(2, 3, 0);
+    mesh.addIndexList(4, 5, 6);
 
     // 定义裁剪网格
     SR_IndexMesh clipMesh = mesh;
@@ -57,6 +63,8 @@ void update(SR_Window &window)
     // 先对顶点做透视变换
     for (int i = 0; i < vertCount; i++) {
         SR_VertexInfo vi = clipMesh.getVertexInfo(i);
+
+        // 顶点着色的位置 TODO 
         vi.vertex = proj * move * vi.vertex;
         clipMesh.setVertex(i, vi);
     }
@@ -90,14 +98,16 @@ void update(SR_Window &window)
         ib.vertex.homogenDivide();
         ic.vertex.homogenDivide();
 
-        // 渲染三角形
-        window.fillTriangle(
-            SR_Vec2f(ia.vertex.x, ia.vertex.y),
-            SR_Vec2f(ib.vertex.x, ib.vertex.y),
-            SR_Vec2f(ic.vertex.x, ic.vertex.y),
-            ia.color,
-            ib.color,
-            ic.color
-        );
+        // 片元着色、深度测试、光栅化
+        // window.fillTriangle(
+        //     SR_Vec2f(ia.vertex.x, ia.vertex.y),
+        //     SR_Vec2f(ib.vertex.x, ib.vertex.y),
+        //     SR_Vec2f(ic.vertex.x, ic.vertex.y),
+        //     ia.color,
+        //     ib.color,
+        //     ic.color
+        // );
+
+        window.rasterizeTriangle(ia, ib, ic);
     }
 }

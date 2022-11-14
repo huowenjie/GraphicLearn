@@ -16,6 +16,7 @@ public:
         renderer = nullptr;
 
         surfaceBuffer = nullptr;
+        zBuffer = nullptr;
     }
 public:
     SDL_Window *window;
@@ -25,6 +26,9 @@ public:
 
     // 帧缓冲
     Uint32 *surfaceBuffer;
+
+    // 深度缓冲
+    float *zBuffer;
 };
 
 SR_Window::SR_Window(int width, int height)
@@ -34,9 +38,15 @@ SR_Window::SR_Window(int width, int height)
     winHeight = height;
 
     Uint32 *buffer = new Uint32[width * height];
-    std::memset(buffer, 0, width * height * sizeof(Uint32));
+    float *zbuffer = new float[width * height];
+
+    for (int i = 0; i < width * height; i++) {
+        buffer[i] = 0x00000000;
+        zbuffer[i] = -FLT_MAX;
+    }
 
     info->surfaceBuffer = buffer;
+    info->zBuffer = zbuffer;
     this->update = nullptr;
 }
 
@@ -46,6 +56,11 @@ SR_Window::~SR_Window()
         if (info->surfaceBuffer) {
             delete info->surfaceBuffer;
             info->surfaceBuffer = nullptr;
+        }
+
+        if (info->zBuffer) {
+            delete info->zBuffer;
+            info->zBuffer = nullptr;
         }
 
         delete info;
@@ -409,6 +424,138 @@ void SR_Window::fillTriangle(
     }
 }
 
+void SR_Window::rasterizeTriangle(
+    const SR_VertexInfo &va,
+    const SR_VertexInfo &vb,
+    const SR_VertexInfo &vc
+)
+{
+    const SR_Vec4f &a = va.vertex;
+    const SR_Vec4f &b = vb.vertex;
+    const SR_Vec4f &c = vc.vertex;
+
+    float xmin = a.x;
+    float xmax = a.x;
+    float ymin = a.y;
+    float ymax = a.y;
+
+    float i = 0;
+    float j = 0;
+
+    float fa = 0.0f;
+    float fb = 0.0f;
+    float fc = 0.0f;
+
+#if 0
+    if (a.x > winWidth - 1 || a.x < 0 ||
+        b.x > winWidth - 1 || b.x < 0 ||
+        c.x > winWidth - 1 || c.x < 0) {
+        return;
+    }
+
+    if (a.y > winHeight - 1 || a.y < 0 ||
+        b.y > winHeight - 1 || b.y < 0 ||
+        c.y > winHeight - 1 || c.y < 0) {
+        return;
+    }
+#endif
+
+    /*
+     * 1.确定三角形的包围盒 xmin xmax ymin ymax；
+     * 2.将像素点索引代入两点式求出重心坐标系数 a，b，c；
+     * 3.拟定一个屏幕外的点 (-1, -1)，两个三角形共线时，以共线为分隔线，其中一个三角形的
+     *   边上的像素点必定和该屏幕外点处于同一侧，以此来判断是否绘制；
+     * 4.根据 a、b、c 来确定像素点的颜色
+     * 
+     * f01(x, y) = (y0 - y1)x + (x1 - x0)y + x0y1 - x1y0
+     * f12(x, y) = (y1 - y2)x + (x2 - x1)y + x1y2 - x2y1
+     * f20(x, y) = (y2 - y0)x + (x0 - x2)y + x2y0 - x0y2
+     * 
+     * a = f12(x, y) / f12(x0, y0)
+     * b = f20(x, y) / f20(x1, y1)
+     * c = f01(x, y) / f01(x2, y2)
+     */
+    xmin = xmin < b.x ? xmin : b.x;
+    xmin = xmin < c.x ? xmin : c.x;
+    xmax = xmax > b.x ? xmax : b.x;
+    xmax = xmax > c.x ? xmax : c.x;
+
+    ymin = ymin < b.y ? ymin : b.y;
+    ymin = ymin < c.y ? ymin : c.y;
+    ymax = ymax > b.y ? ymax : b.y;
+    ymax = ymax > c.y ? ymax : c.y;
+
+    fa = (b.y - c.y) * a.x + (c.x - b.x) * a.y + b.x * c.y - c.x * b.y;
+    fb = (c.y - a.y) * b.x + (a.x - c.x) * b.y + c.x * a.y - a.x * c.y;
+    fc = (a.y - b.y) * c.x + (b.x - a.x) * c.y + a.x * b.y - b.x * a.y;
+
+    for (i = ymin; i <= ymax; i++) {
+        for (j = xmin; j <= xmax; j++) {
+            float alpha = ((b.y - c.y) * j + (c.x - b.x) * i + b.x * c.y - c.x * b.y) / fa;
+            float beta = ((c.y - a.y) * j + (a.x - c.x) * i + c.x * a.y - a.x * c.y) / fb;
+            float gama = ((a.y - b.y) * j + (b.x - a.x) * i + a.x * b.y - b.x * a.y) / fc;
+
+            if (alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) {
+                float ta = fa * ((b.y - c.y) * (-1) + (c.x - b.x) * (-1) + b.x * c.y - c.x * b.y);
+                float tb = fb * ((c.y - a.y) * (-1) + (a.x - c.x) * (-1) + c.x * a.y - a.x * c.y);
+                float tc = fc * ((a.y - b.y) * (-1) + (b.x - a.x) * (-1) + a.x * b.y - b.x * a.y);
+
+                if ((alpha >= 0.0f || ta > 0.0f) &&
+                    (beta >= 0.0f || tb > 0.0f) &&
+                    (gama >= 0.0f || tc > 0.0f)) {
+                    
+                    SR_Color fragColor;
+                    SR_Vec2f fragPos(j, i);
+
+                    fragColor.r = alpha * va.color.r + beta * vb.color.r + gama * vc.color.r;
+                    fragColor.g = alpha * va.color.g + beta * vb.color.g + gama * vc.color.g;
+                    fragColor.b = alpha * va.color.b + beta * vb.color.b + gama * vc.color.b;
+
+                    // 片元着色
+                    SR_Color pixelColor = fragmentShader(fragPos, fragColor);
+
+                    // 重心坐标插值计算深度
+                    float depth = alpha * va.vertex.z + beta * vb.vertex.z + gama * vc.vertex.z;
+                    if (zbufferTest(fragPos, depth)) {
+                        // 光栅化
+                        drawPixel(fragPos, pixelColor);
+                    }
+                }
+            }
+        }
+    }
+}
+
+SR_Color SR_Window::fragmentShader(const SR_Vec2f &pos, const SR_Color &vColor)
+{
+    return vColor;
+}
+
+bool SR_Window::zbufferTest(const SR_Vec2f &pos, float depth)
+{
+    int x = pos.x;
+    int y = pos.y;
+    float *zbuf = info->zBuffer;
+
+    if (x > winWidth - 1 || x < 0) {
+        return false;
+    }
+
+    if (y > winHeight - 1 || y < 0) {
+        return false;
+    }
+
+    y = winHeight - 1 - y;
+
+    if (depth >= zbuf[y * winWidth + x]) {
+        zbuf[y * winWidth + x] = depth;
+        return true;
+    }
+
+    return false;
+}
+
+#if 0
 SR_IndexMesh SR_Window::clipTriangle(
     const SR_Vec4f &n,
     const SR_VertexInfo &a,
@@ -521,6 +668,7 @@ float SR_Window::pointToPlane(const SR_Vec4f &n, const SR_Vec4f &p)
 {
     return n.x * p.x + n.y * p.y + n.z * p.z + n.w * p.w;
 }
+#endif
 
 void SR_Window::render()
 {
@@ -547,7 +695,12 @@ void SR_Window::render()
 
         // 清屏
         Uint32 *buffer = info->surfaceBuffer;
-        std::memset(buffer, 0, count * sizeof(Uint32));
+        float *zbuffer = info->zBuffer;
+
+        for (int i = 0; i < count; i++) {
+            buffer[i] = 0x00000000;
+            zbuffer[i] = -FLT_MAX;
+        }
 
         this->update(*this);
 
