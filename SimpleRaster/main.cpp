@@ -69,12 +69,12 @@ void update(SR_Window &window)
     for (int i = 0; i < vertCount; i++) {
         SR_VertexInfo vi = clipMesh.getVertexInfo(i);
 
-        // 顶点着色的位置 TODO 
+        // 相机视图变换
         vi.vertex = proj * move * vi.vertex;
         clipMesh.setVertex(i, vi);
     }
 
-    // 齐次空间裁剪
+    // 在齐次坐标空间裁剪
     // 分别在 near far left right top bottom 平面对顶点进行裁剪
     clipMesh.clipTriangle(SR_Vec4f(0.0f, 0.0f, -1.0f, 1.0f));
     clipMesh.clipTriangle(SR_Vec4f(0.0f, 0.0f, 1.0f, 1.0f));
@@ -83,7 +83,6 @@ void update(SR_Window &window)
     clipMesh.clipTriangle(SR_Vec4f(0.0f, -1.0f, 0.0f, 1.0f));
     clipMesh.clipTriangle(SR_Vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 
-    // NDC 变换
     int num = clipMesh.getTriangleCount();
 
     for (int i = 0; i < num; i++) {
@@ -93,7 +92,7 @@ void update(SR_Window &window)
         SR_VertexInfo ib = clipMesh.getVertexInfo(list.indexList[1]);
         SR_VertexInfo ic = clipMesh.getVertexInfo(list.indexList[2]);
 
-        // 将顶点变换到 NDC
+        // 将顶点变换到屏幕空间
         ia.vertex = vp * ia.vertex;
         ib.vertex = vp * ib.vertex;
         ic.vertex = vp * ic.vertex;
