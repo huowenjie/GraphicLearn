@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "sr_indexmesh.h"
 
 //-----------------------------------------------------------------------------
@@ -97,9 +98,15 @@ void SR_IndexMesh::clipTriangle(const SR_Vec4f &n)
         float db = pointToPlane(n, b.vertex);
         float dc = pointToPlane(n, c.vertex);
 
+        a.vertex.printValue("a");
+        b.vertex.printValue("b");
+        c.vertex.printValue("c");
+        std::printf("%d da = %f, db = %f, dc = %f\n", i, da, db, dc);
+
         if (da > 0.0f && db > 0.0f && dc > 0.0f) {
             // 全部在平面外，不渲染
             delIndexList(pos);
+            std::printf("%d, 情况1\n", i);
         } else if (
             (da <= 0.0f && db  > 0.0f && dc  > 0.0f) ||
             (da  > 0.0f && db <= 0.0f && dc  > 0.0f) ||
@@ -141,6 +148,7 @@ void SR_IndexMesh::clipTriangle(const SR_Vec4f &n)
 
             // 删除原有的三角形索引表
             delIndexList(pos);
+            std::printf("%d, 情况2\n", i);
         } else if (
             (da  > 0.0f && db <= 0.0f && dc <= 0.0f) ||
             (da <= 0.0f && db  > 0.0f && dc <= 0.0f) ||
@@ -185,9 +193,11 @@ void SR_IndexMesh::clipTriangle(const SR_Vec4f &n)
 
             // 删除原有的三角形索引表
             delIndexList(pos);
+            std::printf("%d, 情况3\n", i);
         } else {
             // 剩下就是全部顶点在裁剪平面内的情况，不做任何改变，列表索引 + 1
             pos++;
+            std::printf("%d, 情况4\n", i);
         }
     }
 }
