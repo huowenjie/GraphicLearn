@@ -37,24 +37,29 @@ void update(SR_Window &window)
         SR_Vec3f(0.0f, 0.0f, 0.0)
     );
     SR_Mat4x4f move = SR_Mat4x4f::translateMatrix(0.0f, 0.0f, 0.0f);
-    //move = move * SR_Mat4x4f::rotateXMatrix(PI / 6.0f);
+    //move = move * SR_Mat4x4f::rotateYMatrix(PI / 4.0f);
 
     // 透视变换至齐次裁剪空间
     SR_Mat4x4f proj = per * cam;
     SR_IndexMesh mesh;
 
-    mesh.addVertex(SR_Vec3f(-0.5f, -0.5f, 0.5f), SR_Color(0.0f, 0.0f, 1.0f));
-    mesh.addVertex(SR_Vec3f(0.5f, -0.5f, 0.5f), SR_Color(0.0f, 1.0f, 0.0f));
-    mesh.addVertex(SR_Vec3f(0.5f, -0.5f, -0.5f), SR_Color(1.0f, 0.0f, 0.0f));
-    mesh.addVertex(SR_Vec3f(-0.5f, -0.5f, -0.5f), SR_Color(0.0f, 1.0f, 0.0f));
+    // 一个测试四棱锥
+    mesh.addVertex(SR_Vec3f(0.0f, -1.0f, 0.0f), SR_Color(0.0f, 0.0f, 1.0f));
+    mesh.addVertex(SR_Vec3f(-0.5f, 0.0f, 0.5f), SR_Color(1.0f, 1.0f, 0.0f));
+    mesh.addVertex(SR_Vec3f(0.5f, 0.0f, 0.5f), SR_Color(1.0f, 0.0f, 1.0f));
+    mesh.addVertex(SR_Vec3f(0.5f, 0.0f, -0.5f), SR_Color(1.0f, 0.0f, 1.0f));
+    mesh.addVertex(SR_Vec3f(-0.5f, 0.0f, -0.5f), SR_Color(1.0f, 1.0f, 0.0f));
+    mesh.addVertex(SR_Vec3f(0.0f, 1.0f, 0.0f), SR_Color(0.0f, 0.0f, 1.0f));
 
-    mesh.addVertex(SR_Vec3f(-0.5f, -1.0f, 0.0f), SR_Color(0.0f, 1.0f, 1.0f));
-    mesh.addVertex(SR_Vec3f(0.5f, -1.0f, 0.0f), SR_Color(0.0f, 1.0f, 1.0f));
-    mesh.addVertex(SR_Vec3f(0.0f, 0.0f, 0.0f), SR_Color(0.0f, 1.0f, 1.0f));
+    mesh.addIndexList(0, 2, 1);
+    mesh.addIndexList(0, 3, 2);
+    mesh.addIndexList(0, 4, 3);
+    mesh.addIndexList(0, 1, 4);
 
-    mesh.addIndexList(0, 1, 2);
-    mesh.addIndexList(2, 3, 0);
-    mesh.addIndexList(4, 5, 6);
+    mesh.addIndexList(5, 1, 2);
+    mesh.addIndexList(5, 2, 3);
+    mesh.addIndexList(5, 3, 4);
+    mesh.addIndexList(5, 4, 1);
 
     // 定义裁剪网格
     SR_IndexMesh clipMesh = mesh;
@@ -99,15 +104,6 @@ void update(SR_Window &window)
         ic.vertex.homogenDivide();
 
         // 片元着色、深度测试、光栅化
-        // window.fillTriangle(
-        //     SR_Vec2f(ia.vertex.x, ia.vertex.y),
-        //     SR_Vec2f(ib.vertex.x, ib.vertex.y),
-        //     SR_Vec2f(ic.vertex.x, ic.vertex.y),
-        //     ia.color,
-        //     ib.color,
-        //     ic.color
-        // );
-
         window.rasterizeTriangle(ia, ib, ic);
     }
 }
