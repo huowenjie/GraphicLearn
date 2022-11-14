@@ -505,20 +505,23 @@ void SR_Window::rasterizeTriangle(
                     (gama >= 0.0f || tc > 0.0f)) {
                     
                     SR_Color fragColor;
-                    SR_Vec2f fragPos(j, i);
+                    SR_Vec2f pixelPos(j, i);
 
                     fragColor.r = alpha * va.color.r + beta * vb.color.r + gama * vc.color.r;
                     fragColor.g = alpha * va.color.g + beta * vb.color.g + gama * vc.color.g;
                     fragColor.b = alpha * va.color.b + beta * vb.color.b + gama * vc.color.b;
 
                     // 片元着色
+                    SR_Vec2f fragPos;
+                    fragPos.x = j / winWidth;
+                    fragPos.y = i / winHeight;
                     SR_Color pixelColor = fragmentShader(fragPos, fragColor);
 
                     // 重心坐标插值计算深度
                     float depth = alpha * va.vertex.z + beta * vb.vertex.z + gama * vc.vertex.z;
-                    if (zbufferTest(fragPos, depth)) {
+                    if (zbufferTest(pixelPos, depth)) {
                         // 光栅化
-                        drawPixel(fragPos, pixelColor);
+                        drawPixel(pixelPos, pixelColor);
                     }
                 }
             }
@@ -528,7 +531,7 @@ void SR_Window::rasterizeTriangle(
 
 SR_Color SR_Window::fragmentShader(const SR_Vec2f &pos, const SR_Color &vColor)
 {
-    return vColor;
+    return SR_Color(pos.x);
 }
 
 bool SR_Window::zbufferTest(const SR_Vec2f &pos, float depth)
