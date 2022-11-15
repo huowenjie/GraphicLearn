@@ -12,11 +12,11 @@
 // 全局定义函数
 
 // 夹逼
-float srtClampf(float val, float max, float min);
+float srClampf(float val, float max, float min);
 
 // 选择最值
-float srtMaxf(float a, float b);
-float srtMinf(float a, float b);
+float srMaxf(float a, float b);
+float srMinf(float a, float b);
 
 //-----------------------------------------------------------------------------
 

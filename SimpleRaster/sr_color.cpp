@@ -161,10 +161,10 @@ void SR_Color::setRGB(float r, float g, float b)
 
 void SR_Color::clamp()
 {
-    this->r = srtClampf(r, 1.0f, 0.0f);
-    this->g = srtClampf(g, 1.0f, 0.0f);
-    this->b = srtClampf(b, 1.0f, 0.0f);
-    this->a = srtClampf(a, 1.0f, 0.0f);
+    this->r = srClampf(r, 1.0f, 0.0f);
+    this->g = srClampf(g, 1.0f, 0.0f);
+    this->b = srClampf(b, 1.0f, 0.0f);
+    this->a = srClampf(a, 1.0f, 0.0f);
 }
 
 void SR_Color::printValue(const char *title) const

@@ -27,8 +27,19 @@ public:
         indexList[2] = c;
     }
 
+    SR_TriangleIndexList(int a, int b, int c, const SR_Vec3f &n)
+    {
+        indexList[0] = a;
+        indexList[1] = b;
+        indexList[2] = c;
+        normal = n;
+    }
+
 public:
     int indexList[3];
+
+    // 法线向量
+    SR_Vec3f normal;
 };
 
 // 顶点信息
@@ -46,8 +57,14 @@ public:
     }
 
 public:
+    // 顶点坐标
     SR_Vec4f vertex;
+
+    // 顶点颜色
     SR_Color color;
+
+    // 顶点在世界坐标系中的位置
+    SR_Vec3f global;
 };
 
 // 索引网格
@@ -68,6 +85,9 @@ public:
 
     void addIndexList(const SR_TriangleIndexList &list);
     void addIndexList(int a, int b, int c);
+
+    // 设置索引表
+    void setIndexList(int i, const SR_TriangleIndexList &list);
 
     // 移除索引表
     void delIndexList(int i);

@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <cstring>
 #include <cstdio>
+
 #include "sr_window.h"
 
 //-----------------------------------------------------------------------------
@@ -47,6 +48,7 @@ SR_Window::SR_Window(int width, int height)
 
     info->surfaceBuffer = buffer;
     info->zBuffer = zbuffer;
+    this->start = nullptr;
     this->update = nullptr;
 }
 
@@ -155,6 +157,11 @@ bool SR_Window::terminate()
 
     SDL_Quit();
     return true;
+}
+
+void SR_Window::setStart(void (*start)(SR_Window &))
+{
+    this->start = start;
 }
 
 void SR_Window::setUpdate(void (*update)(SR_Window &))
@@ -331,103 +338,12 @@ void SR_Window::drawLine(const SR_Vec2f &a, const SR_Vec2f &b, const SR_Color &c
     }
 }
 
-void SR_Window::fillTriangle(
-    const SR_Vec2f &a,
-    const SR_Vec2f &b,
-    const SR_Vec2f &c,
-    const SR_Color &ca,
-    const SR_Color &cb,
-    const SR_Color &cc
-)
-{
-    float xmin = a.x;
-    float xmax = a.x;
-    float ymin = a.y;
-    float ymax = a.y;
-
-    float i = 0;
-    float j = 0;
-
-    float fa = 0.0f;
-    float fb = 0.0f;
-    float fc = 0.0f;
-
-#if 0
-    if (a.x > winWidth - 1 || a.x < 0 ||
-        b.x > winWidth - 1 || b.x < 0 ||
-        c.x > winWidth - 1 || c.x < 0) {
-        return;
-    }
-
-    if (a.y > winHeight - 1 || a.y < 0 ||
-        b.y > winHeight - 1 || b.y < 0 ||
-        c.y > winHeight - 1 || c.y < 0) {
-        return;
-    }
-#endif
-
-    /*
-     * 1.确定三角形的包围盒 xmin xmax ymin ymax；
-     * 2.将像素点索引代入两点式求出重心坐标系数 a，b，c；
-     * 3.拟定一个屏幕外的点 (-1, -1)，两个三角形共线时，以共线为分隔线，其中一个三角形的
-     *   边上的像素点必定和该屏幕外点处于同一侧，以此来判断是否绘制；
-     * 4.根据 a、b、c 来确定像素点的颜色
-     * 
-     * f01(x, y) = (y0 - y1)x + (x1 - x0)y + x0y1 - x1y0
-     * f12(x, y) = (y1 - y2)x + (x2 - x1)y + x1y2 - x2y1
-     * f20(x, y) = (y2 - y0)x + (x0 - x2)y + x2y0 - x0y2
-     * 
-     * a = f12(x, y) / f12(x0, y0)
-     * b = f20(x, y) / f20(x1, y1)
-     * c = f01(x, y) / f01(x2, y2)
-     */
-    xmin = xmin < b.x ? xmin : b.x;
-    xmin = xmin < c.x ? xmin : c.x;
-    xmax = xmax > b.x ? xmax : b.x;
-    xmax = xmax > c.x ? xmax : c.x;
-
-    ymin = ymin < b.y ? ymin : b.y;
-    ymin = ymin < c.y ? ymin : c.y;
-    ymax = ymax > b.y ? ymax : b.y;
-    ymax = ymax > c.y ? ymax : c.y;
-
-    fa = (b.y - c.y) * a.x + (c.x - b.x) * a.y + b.x * c.y - c.x * b.y;
-    fb = (c.y - a.y) * b.x + (a.x - c.x) * b.y + c.x * a.y - a.x * c.y;
-    fc = (a.y - b.y) * c.x + (b.x - a.x) * c.y + a.x * b.y - b.x * a.y;
-
-    for (i = ymin; i <= ymax; i++) {
-        for (j = xmin; j <= xmax; j++) {
-            float alpha = ((b.y - c.y) * j + (c.x - b.x) * i + b.x * c.y - c.x * b.y) / fa;
-            float beta = ((c.y - a.y) * j + (a.x - c.x) * i + c.x * a.y - a.x * c.y) / fb;
-            float gama = ((a.y - b.y) * j + (b.x - a.x) * i + a.x * b.y - b.x * a.y) / fc;
-
-            if (alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) {
-                float ta = fa * ((b.y - c.y) * (-1) + (c.x - b.x) * (-1) + b.x * c.y - c.x * b.y);
-                float tb = fb * ((c.y - a.y) * (-1) + (a.x - c.x) * (-1) + c.x * a.y - a.x * c.y);
-                float tc = fc * ((a.y - b.y) * (-1) + (b.x - a.x) * (-1) + a.x * b.y - b.x * a.y);
-
-                if ((alpha >= 0.0f || ta > 0.0f) &&
-                    (beta >= 0.0f || tb > 0.0f) &&
-                    (gama >= 0.0f || tc > 0.0f)) {
-                    
-                    float red = alpha *  ca.r + beta * cb.r + gama * cc.r;
-                    float green = alpha * ca.g + beta * cb.g + gama * cc.g;
-                    float blue = alpha * ca.b + beta * cb.b + gama * cc.b;
-
-                    /* 利用重心坐标计算深度信息 */
-                    //float depth = alpha * frag0->depth + beta * frag1->depth + gama * frag2->depth;
-
-                    drawPixel(SR_Vec2f(j, i), SR_Color(red, green, blue));
-                }
-            }
-        }
-    }
-}
-
 void SR_Window::rasterizeTriangle(
+    const SR_TriangleIndexList &list,
     const SR_VertexInfo &va,
     const SR_VertexInfo &vb,
-    const SR_VertexInfo &vc
+    const SR_VertexInfo &vc,
+    SR_Color (*fragmentShader)(const SR_Fragment &)
 )
 {
     const SR_Vec4f &a = va.vertex;
@@ -511,14 +427,30 @@ void SR_Window::rasterizeTriangle(
                     fragColor.g = alpha * va.color.g + beta * vb.color.g + gama * vc.color.g;
                     fragColor.b = alpha * va.color.b + beta * vb.color.b + gama * vc.color.b;
 
-                    // 片元着色
-                    SR_Vec2f fragPos;
-                    fragPos.x = j / winWidth;
-                    fragPos.y = i / winHeight;
-                    SR_Color pixelColor = fragmentShader(fragPos, fragColor);
-
                     // 重心坐标插值计算深度
                     float depth = alpha * va.vertex.z + beta * vb.vertex.z + gama * vc.vertex.z;
+                    SR_Color pixelColor;
+
+                    if (fragmentShader) {
+                        SR_Fragment frag;
+                        SR_VertexInfo vertInfo;
+
+                        // 计算 FragCoord
+                        vertInfo.vertex = SR_Vec4f(j, i, depth, 1.0f);
+                        vertInfo.color = fragColor;
+
+                        // 计算三角形内部的点在世界空间的坐标
+                        vertInfo.global.x = alpha * va.global.x + beta * vb.global.x + gama * vc.global.x;
+                        vertInfo.global.y = alpha * va.global.y + beta * vb.global.y + gama * vc.global.y;
+                        vertInfo.global.z = alpha * va.global.z + beta * vb.global.z + gama * vc.global.z;
+
+                        frag.vertex = vertInfo;
+                        frag.normal = list.normal;
+                        pixelColor = fragmentShader(frag);
+                    } else {
+                        pixelColor = fragColor;
+                    }
+
                     if (zbufferTest(pixelPos, depth)) {
                         // 光栅化
                         drawPixel(pixelPos, pixelColor);
@@ -527,11 +459,6 @@ void SR_Window::rasterizeTriangle(
             }
         }
     }
-}
-
-SR_Color SR_Window::fragmentShader(const SR_Vec2f &pos, const SR_Color &vColor)
-{
-    return SR_Color(pos.x);
 }
 
 bool SR_Window::zbufferTest(const SR_Vec2f &pos, float depth)
@@ -558,121 +485,6 @@ bool SR_Window::zbufferTest(const SR_Vec2f &pos, float depth)
     return false;
 }
 
-#if 0
-SR_IndexMesh SR_Window::clipTriangle(
-    const SR_Vec4f &n,
-    const SR_VertexInfo &a,
-    const SR_VertexInfo &b,
-    const SR_VertexInfo &c
-)
-{
-    SR_IndexMesh mesh;
-
-    float da = pointToPlane(n, a.vertex);
-    float db = pointToPlane(n, b.vertex);
-    float dc = pointToPlane(n, c.vertex);
-
-    if (da > 0.0f && db > 0.0f && dc > 0.0f) {
-        // 全部在平面外，不渲染
-        return mesh;
-    }
-
-    if (
-        (da <= 0.0f && db  > 0.0f && dc  > 0.0f) ||
-        (da  > 0.0f && db <= 0.0f && dc  > 0.0f) ||
-        (da  > 0.0f && db  > 0.0f && dc <= 0.0f)
-    ) {
-        // 三角形三个点全部按照顺时针方向考虑
-        // 有两个点在裁剪平面外则裁剪为一个三角形
-        // 首先找到在裁剪平面内的点 v0
-        SR_Vec4f v0; float d0 = 0.0f; SR_Color c0;
-        SR_Vec4f v1; float d1 = 0.0f; SR_Color c1;
-        SR_Vec4f v2; float d2 = 0.0f; SR_Color c2;
-
-        if (da <= 0.0) {
-            v0 = a.vertex; d0 = da; c0 = a.color;
-            v1 = b.vertex; d1 = db; c1 = b.color;
-            v2 = c.vertex; d2 = dc; c2 = c.color;
-        } else if (db <= 0.0f) {
-            v0 = b.vertex; d0 = db; c0 = b.color;
-            v1 = c.vertex; d1 = dc; c1 = c.color;
-            v2 = a.vertex; d2 = da; c2 = a.color;
-        } else {
-            v0 = c.vertex; d0 = dc; c0 = c.color;
-            v1 = a.vertex; d1 = da; c1 = a.color;
-            v2 = b.vertex; d2 = db; c2 = b.color;
-        }
-
-        // p = a * tb + b * ta 且 tb = 1.0 - ta
-        float ta = d0 / (d0 - d1);
-        float tb = d0 / (d0 - d2);
-
-        // 在齐次空间下通过线性插值求交点 insA、insB
-        // 求出交点后，新的三角形为 v0-insA-insB
-        mesh.addVertex(v0, c0);
-        mesh.addVertex(SR_Vec4f::lerp(v0, v1, ta), SR_Color::lerp(c0, c1, ta));
-        mesh.addVertex(SR_Vec4f::lerp(v0, v2, tb), SR_Color::lerp(c0, c2, tb));
-        mesh.addIndexList(0, 1, 2);
-
-        return mesh;
-    }
-
-    if (
-        (da  > 0.0f && db <= 0.0f && dc <= 0.0f) ||
-        (da <= 0.0f && db  > 0.0f && dc <= 0.0f) ||
-        (da <= 0.0f && db <= 0.0f && dc  > 0.0f)
-    ) {
-        // 三角形三个点全部按照顺时针方向考虑
-        // 有一个点在裁剪平面外则裁剪为一个由两个三角形组成的四边形
-        // 首先找到在裁剪平面外的点 v0
-        SR_Vec4f v0; float d0 = 0.0f; SR_Color c0;
-        SR_Vec4f v1; float d1 = 0.0f; SR_Color c1;
-        SR_Vec4f v2; float d2 = 0.0f; SR_Color c2;
-
-        if (da > 0.0) {
-            v0 = a.vertex; d0 = da; c0 = a.color;
-            v1 = b.vertex; d1 = db; c1 = b.color;
-            v2 = c.vertex; d2 = dc; c2 = c.color;
-        } else if (db > 0.0f) {
-            v0 = b.vertex; d0 = db; c0 = b.color;
-            v1 = c.vertex; d1 = dc; c1 = c.color;
-            v2 = a.vertex; d2 = da; c2 = a.color;
-        } else {
-            v0 = c.vertex; d0 = dc; c0 = c.color;
-            v1 = a.vertex; d1 = da; c1 = a.color;
-            v2 = b.vertex; d2 = db; c2 = b.color;
-        }
-
-        // 三角形 abc a在外部，那么 ab ac 和裁剪平面的交点分别为 insA，insB
-        // 那么原有的三角形被拆分为 insA-b-c 和 c-insB-insA
-        float ta = d0 / (d0 - d1);
-        float tb = d0 / (d0 - d2);
-
-        // 分别是 insA - b - c - insB
-        mesh.addVertex(SR_Vec4f::lerp(v0, v1, ta), SR_Color::lerp(c0, c1, ta));
-        mesh.addVertex(v1, c1);
-        mesh.addVertex(v2, c2);
-        mesh.addVertex(SR_Vec4f::lerp(v0, v2, tb), SR_Color::lerp(c0, c2, tb));
-
-        mesh.addIndexList(0, 1, 2);
-        mesh.addIndexList(2, 3, 0);
-        return mesh;
-    }
-
-    // 剩下就是全部顶点在裁剪平面内的情况
-    mesh.addVertex(a);
-    mesh.addVertex(b);
-    mesh.addVertex(c);
-    mesh.addIndexList(0, 1, 2);
-    return mesh;
-}
-
-float SR_Window::pointToPlane(const SR_Vec4f &n, const SR_Vec4f &p)
-{
-    return n.x * p.x + n.y * p.y + n.z * p.z + n.w * p.w;
-}
-#endif
-
 void SR_Window::render()
 {
     SDL_Texture *texture = nullptr;
@@ -686,6 +498,10 @@ void SR_Window::render()
     texture = info->texture;
     renderer = info->renderer;
     evt = &(info->evt);
+
+    if (this->start) {
+        this->start(*this);
+    }
 
     while (1) {
         while (SDL_PollEvent(evt)) {
@@ -705,7 +521,9 @@ void SR_Window::render()
             zbuffer[i] = -FLT_MAX;
         }
 
-        this->update(*this);
+        if (this->update) {
+            this->update(*this);
+        }
 
         SDL_UpdateTexture(texture, nullptr, info->surfaceBuffer, winWidth * sizeof(Uint32));
         SDL_RenderCopy(renderer, texture, nullptr, nullptr);

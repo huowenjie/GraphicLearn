@@ -2,7 +2,7 @@
 
 //-----------------------------------------------------------------------------
 
-float srtClampf(float val, float max, float min)
+float srClampf(float val, float max, float min)
 {
     if (val > max) {
         return max;
@@ -13,12 +13,12 @@ float srtClampf(float val, float max, float min)
     return val;
 }
 
-float srtMaxf(float a, float b)
+float srMaxf(float a, float b)
 {
     return a > b ? a : b;
 }
 
-float srtMinf(float a, float b)
+float srMinf(float a, float b)
 {
     return a < b ? a : b;
 }

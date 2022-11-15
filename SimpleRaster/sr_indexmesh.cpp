@@ -46,6 +46,11 @@ void SR_IndexMesh::addIndexList(int a, int b, int c)
     indexArray.push_back(SR_TriangleIndexList(a, b, c));
 }
 
+void SR_IndexMesh::setIndexList(int i, const SR_TriangleIndexList &list)
+{
+    indexArray[i] = list;
+}
+
 void SR_IndexMesh::delIndexList(int i)
 {
     indexArray.erase(indexArray.begin() + i);
