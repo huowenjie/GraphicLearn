@@ -19,4 +19,4 @@ sudo apt install libsdl2-gfx-dev
 ## SimpleRayTracing 是一个简单的光线追踪 demo 学习虎书 1~4 章节的成果
 基本将虎书 1-4 章所讲解的知识点实现，采用 C++ 编写。
 ## SimpleRaster
-这个是最终目的，采用 C++ 编写，未完成。
+一个简单的软光栅，采用 phong shading 渲染一个棱锥。
