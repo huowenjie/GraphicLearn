@@ -1,7 +1,7 @@
 #ifndef __GR_ENGINE_H__
 #define __GR_ENGINE_H__
 
-#include "gr_vec2f.h"
+#include "math/gr_vec2f.h"
 #include "gr_color.h"
 
 /*===========================================================================*/

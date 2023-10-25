@@ -1,7 +1,7 @@
 
 BIN_PATH := .
 INC_PATH := .
-SRC_PATH := . mem
+SRC_PATH := . mem math
 LIB_PATH :=
 LIB_LIST := SDL2 dl m
 DEF_LIST := GR_MEMORY_DEBUG

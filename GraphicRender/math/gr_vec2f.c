@@ -67,7 +67,7 @@ GR_VEC2F gr_vec2f_normalize(const GR_VEC2F *a)
         float y = a->y;
         float len = sqrtf(x * x + y * y);
 
-        if (fabsf(len) > 1e-6) {
+        if (fabsf(len) > 1e-6f) {
             c.x = x / len;
             c.y = y / len;
         }

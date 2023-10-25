@@ -31,6 +31,7 @@ typedef struct gr_vec2f
  * 
  * gr_vec2f_line_comb 向量的线性组合，vlist 为向量列表，wlist 为权列表，k 为项数
  */
+
 GR_VEC2F gr_vec2f_add(const GR_VEC2F *a, const GR_VEC2F *b);
 GR_VEC2F gr_vec2f_sub(const GR_VEC2F *a, const GR_VEC2F *b);
 GR_VEC2F gr_vec2f_mul(const GR_VEC2F *a, float t);

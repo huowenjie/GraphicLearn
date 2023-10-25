@@ -20,3 +20,5 @@ sudo apt install libsdl2-gfx-dev
 基本将虎书 1-4 章所讲解的知识点实现，采用 C++ 编写。
 ## SimpleRaster
 一个简单的软光栅，采用 phong shading 渲染一个棱锥。
+## GraphicRender
+用 C 语言重写的软渲染器，不定时更新，作为学习《Fundamentals of Computer Graphics 4th》的成果

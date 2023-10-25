@@ -26,10 +26,13 @@ typedef struct gr_vec3f
  * gr_vec3f_lerp 向量线性插值, p = (1 - t) * a + t * b 当 t = 0 时返回 a，否则返回 b
  * 
  * gr_vec3f_dot 向量点乘
- * gr_vec3f_cross 向量叉乘的模，在 2 维平面上，我们忽略向量叉乘后的方向，仅计算其模
+ * gr_vec3f_cross 向量叉乘
  * gr_vec3f_length 求向量的长度
  * gr_vec3f_angle 求两个向量的夹角
+ * 
+ * gr_vec3f_line_comb 向量的线性组合，vlist 为向量列表，wlist 为权列表，k 为项数
  */
+
 GR_VEC3F gr_vec3f_add(const GR_VEC3F *a, const GR_VEC3F *b);
 GR_VEC3F gr_vec3f_sub(const GR_VEC3F *a, const GR_VEC3F *b);
 GR_VEC3F gr_vec3f_mul(const GR_VEC3F *a, float t);
@@ -40,9 +43,11 @@ GR_VEC3F gr_vec3f_normalize(const GR_VEC3F *a);
 GR_VEC3F gr_vec3f_lerp(const GR_VEC3F *a, const GR_VEC3F *b, float t);
 
 float gr_vec3f_dot(const GR_VEC3F *a, const GR_VEC3F *b);
-float gr_vec3f_cross(const GR_VEC3F *a, const GR_VEC3F *b);
+GR_VEC3F gr_vec3f_cross(const GR_VEC3F *a, const GR_VEC3F *b);
 float gr_vec3f_length(const GR_VEC3F *a);
 float gr_vec3f_angle(const GR_VEC3F *a, const GR_VEC3F *b);
+
+GR_VEC3F gr_vec3f_line_comb(const GR_VEC3F *vlist, const float *wlist, int k);
 
 /*===========================================================================*/
 
