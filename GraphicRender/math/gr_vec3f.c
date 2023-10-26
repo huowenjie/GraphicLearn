@@ -174,4 +174,38 @@ GR_VEC3F gr_vec3f_line_comb(const GR_VEC3F *vlist, const float *wlist, int k)
     return c;
 }
 
+GR_BOOL gr_vec3f_build_basic(
+    const GR_VEC3F *a,
+    const GR_VEC3F *b,
+    GR_VEC3F *w,
+    GR_VEC3F *u,
+    GR_VEC3F *v)
+{
+    GR_VEC3F tw = { 0 };
+    GR_VEC3F tu = { 0 };
+    GR_VEC3F tv = { 0 };
+
+    if (!a || !b) {
+        return GR_FALSE;
+    }
+
+    tw = gr_vec3f_normalize(a);
+    tu = gr_vec3f_cross(b, &tw);
+    tu = gr_vec3f_normalize(&tu);
+    tv = gr_vec3f_cross(&tw, &tu);
+
+    if (w) {
+        *w = tw;
+    }
+
+    if (u) {
+        *u = tu;
+    }
+
+    if (v) {
+        *v = tv;
+    }
+    return GR_TRUE;
+}
+
 /*===========================================================================*/

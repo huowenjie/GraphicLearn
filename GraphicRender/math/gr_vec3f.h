@@ -1,7 +1,7 @@
 #ifndef __GR_VEC3F_H__
 #define __GR_VEC3F_H__
 
-#include "gr_type.h"
+#include "../gr_type.h"
 
 /*===========================================================================*/
 /* 三维向量 */
@@ -48,6 +48,14 @@ float gr_vec3f_length(const GR_VEC3F *a);
 float gr_vec3f_angle(const GR_VEC3F *a, const GR_VEC3F *b);
 
 GR_VEC3F gr_vec3f_line_comb(const GR_VEC3F *vlist, const float *wlist, int k);
+
+/* 基于两个向量构建正交基 */
+GR_BOOL gr_vec3f_build_basic(
+    const GR_VEC3F *a,
+    const GR_VEC3F *b,
+    GR_VEC3F *w,
+    GR_VEC3F *u,
+    GR_VEC3F *v);
 
 /*===========================================================================*/
 

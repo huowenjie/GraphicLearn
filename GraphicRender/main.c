@@ -1,12 +1,35 @@
 #include <stddef.h>
-#include "gr_engine.h"
 #include "mem/gr_mem.h"
+#include "math/gr_vec2f.h"
+
+#include "gr_engine.h"
 
 /*---------------------------------------------------------------------------*/
 
+void draw_circle(GR_ENGINE *engine, const GR_VEC2F *p, float r, GR_RGB rgb)
+{
+    float d = r + 10.0f;
+    float i = p->x - d;
+    float j = 0.0f;
+
+    for (; i < (p->x + d); i += 1.0f) {
+        for (j = p->y - d; j < (p->y + d); j += 1.0f) {
+            GR_VEC2F pt = { i, j };
+            GR_VEC2F v = gr_vec2f_sub(&pt, p);
+
+            if (gr_vec2f_length(&v) <= r) {
+                gr_engine_draw_pixel(engine, (int)pt.x, (int)pt.y, 0x00FF00FF);
+            }
+        }
+    }
+}
+
 GR_UINT32 render_update(GR_ENGINE *engine, void *args)
 {
-    gr_engine_draw_pixel(engine, 100, 100, 0x00FF00FF);
+    GR_VEC2F pt = { 0.0f, 0.0f };
+
+    draw_circle(engine, &pt, 50.0f, 0x00FF00FF);
+    //gr_engine_draw_pixel(engine, (int)pt.x, (int)pt.y, 0x00FF00FF);
     gr_engine_draw_line(engine, 105, 105, 300, 200, 0x00FF00FF);
     return 0;
 }
