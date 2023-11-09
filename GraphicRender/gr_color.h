@@ -25,6 +25,9 @@ void gr_color_clamp(GR_COLOR *color);
 /* 将颜色对象转换为整数表示 */
 GR_RGB gr_color_to_rgb(const GR_COLOR *color);
 
+/* 将整数转换为颜色对象 */
+GR_COLOR gr_color_to_obj(GR_RGB rgb);
+
 /*===========================================================================*/
 
 #endif /* __GR_COLOR_H__ */

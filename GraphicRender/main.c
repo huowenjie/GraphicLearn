@@ -18,7 +18,7 @@ void draw_circle(GR_ENGINE *engine, const GR_VEC2F *p, float r, GR_RGB rgb)
             GR_VEC2F v = gr_vec2f_sub(&pt, p);
 
             if (gr_vec2f_length(&v) <= r) {
-                gr_engine_draw_pixel(engine, (int)pt.x, (int)pt.y, 0x00FF00FF);
+                gr_engine_draw_pixel(engine, (int)pt.x, (int)pt.y, 0xFFFF00FF);
             }
         }
     }
@@ -28,9 +28,9 @@ GR_UINT32 render_update(GR_ENGINE *engine, void *args)
 {
     GR_VEC2F pt = { 0.0f, 0.0f };
 
-    draw_circle(engine, &pt, 50.0f, 0x00FF00FF);
+    draw_circle(engine, &pt, 100.0f, 0x00FF00FF);
     //gr_engine_draw_pixel(engine, (int)pt.x, (int)pt.y, 0x00FF00FF);
-    gr_engine_draw_line(engine, 105, 105, 300, 200, 0x00FF00FF);
+    gr_engine_draw_line(engine, 40, 0, 50, 359, 0xFFFF00FF);
     return 0;
 }
 
@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
     GR_MEM_START;
 
     engine = gr_engine_create(480, 360);
+    //engine = gr_engine_create(100, 100);
     gr_engine_set_update(engine, render_update, NULL);
     gr_engine_render(engine);
     gr_engine_destroy(engine);

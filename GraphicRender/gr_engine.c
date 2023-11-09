@@ -5,6 +5,7 @@
 
 #include "gr_engine.h"
 #include "gr_window.h"
+#include "gr_filter.h"
 #include "mem/gr_mem.h"
 
 /*===========================================================================*/
@@ -24,7 +25,7 @@ struct gr_engine
     GR_UINT32 width;
     GR_UINT32 height;
 
-    /* 帧缓冲 */
+    /* 颜色缓冲 */
     GR_UINT32 *fbuffer;
 
     /* 深度缓冲 */
@@ -36,6 +37,14 @@ struct gr_engine
     /* 回调参数 */
     void *args;
 };
+
+/*===========================================================================*/
+
+/* 颜色卷积运算 */
+static GR_RGB convolve_color(
+    const GR_RGB *cbuf, int w, int h, int i, int j, const GR_FILTER *filter);
+
+/*===========================================================================*/
 
 GR_ENGINE *gr_engine_create(int width, int height)
 {
@@ -150,6 +159,8 @@ void gr_engine_render(GR_ENGINE *engine)
     GR_LOOP_UPDATE update = NULL;
     void *args = NULL;
 
+    GR_FILTER *filter = NULL;
+
     int width = 0;
     int height = 0;
 
@@ -171,9 +182,12 @@ void gr_engine_render(GR_ENGINE *engine)
     renderer = window->renderer;
     evt = &(window->evt);
 
+    filter = gr_filter_create(GR_FT_BOX_FILTER);
+
     while (1) {
         while (SDL_PollEvent(evt)) {
             if (evt->type == SDL_QUIT) {
+                gr_filter_destroy(filter);
                 return;
             }
         }
@@ -191,6 +205,14 @@ void gr_engine_render(GR_ENGINE *engine)
 
         if (update) {
             update(engine, args);
+        }
+
+        /* 卷积滤波 */
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                GR_RGB c = convolve_color(buffer, width, height, i, j, filter);
+                gr_engine_draw_pixel(engine, i, j, c);
+            }
         }
 
         SDL_UpdateTexture(texture, NULL, engine->fbuffer, width * sizeof(Uint32));
@@ -486,6 +508,77 @@ void gr_destroy_window(GR_WINDOW *window)
 
         SDL_Quit();
     }
+}
+
+/*===========================================================================*/
+
+GR_RGB convolve_color(
+    const GR_RGB *cbuf, int w, int h, int i, int j, const GR_FILTER *filter)
+{
+    float sr = 0.0f;
+    float sg = 0.0f;
+    float sb = 0.0f;
+
+    int r = 0;
+
+    int li = 0;
+    int ri = 0;
+    int lj = 0;
+    int rj = 0;
+
+    GR_COLOR color = { 0 };
+    GR_RGB ret = 0;
+
+    if (!cbuf || !filter || i < 0) {
+        return 0;
+    }
+
+    r = gr_filter_radius(filter);
+
+    li = i - r;
+    ri = i + r + 1;
+    lj = j - r;
+    rj = j + r + 1;
+
+    if (li < 0) {
+        li = 0;
+    }
+
+    if (ri >= w) {
+        ri = w;
+    }
+
+    if (lj < 0) {
+        lj = 0;
+    }
+
+    if (rj >= h) {
+        rj = h;
+    }
+
+    for (int it = li; it < ri; it++) {
+        for (int jt = lj; jt < rj; jt++) {
+            float val = gr_filter_get(filter, i - it, j - jt);
+
+            int x = it;
+            int y = h - 1 - jt;
+            int index = y * w + x;
+
+            color = gr_color_to_obj(cbuf[index]);
+
+            sr = sr + color.r * val;
+            sg = sg + color.g * val;
+            sb = sb + color.b * val;
+        }
+    }
+
+    color.r = sr;
+    color.g = sg;
+    color.b = sb;
+    color.a = 1.0f;
+    gr_color_clamp(&color);
+    ret = gr_color_to_rgb(&color);
+    return ret;
 }
 
 /*===========================================================================*/
