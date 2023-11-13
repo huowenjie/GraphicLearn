@@ -412,13 +412,13 @@ void SR_Window::rasterizeTriangle(
             float gama = ((a.y - b.y) * j + (b.x - a.x) * i + a.x * b.y - b.x * a.y) / fc;
 
             if (alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) {
-                float ta = fa * ((b.y - c.y) * (-1) + (c.x - b.x) * (-1) + b.x * c.y - c.x * b.y);
-                float tb = fb * ((c.y - a.y) * (-1) + (a.x - c.x) * (-1) + c.x * a.y - a.x * c.y);
-                float tc = fc * ((a.y - b.y) * (-1) + (b.x - a.x) * (-1) + a.x * b.y - b.x * a.y);
+                float ta = fa * ((b.y - c.y) * (-1.0f) + (c.x - b.x) * (-1.0f) + b.x * c.y - c.x * b.y);
+                float tb = fb * ((c.y - a.y) * (-1.0f) + (a.x - c.x) * (-1.0f) + c.x * a.y - a.x * c.y);
+                float tc = fc * ((a.y - b.y) * (-1.0f) + (b.x - a.x) * (-1.0f) + a.x * b.y - b.x * a.y);
 
                 if ((alpha >= 0.0f || ta > 0.0f) &&
-                    (beta >= 0.0f || tb > 0.0f) &&
-                    (gama >= 0.0f || tc > 0.0f)) {
+                    (beta >= 0.0f  || tb > 0.0f) &&
+                    (gama >= 0.0f  || tc > 0.0f)) {
                     
                     SR_Color fragColor;
                     SR_Vec2f pixelPos(j, i);
