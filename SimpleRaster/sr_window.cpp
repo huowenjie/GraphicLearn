@@ -417,9 +417,9 @@ void SR_Window::rasterizeTriangle(
                 float tc = fc * ((a.y - b.y) * (-1.0f) + (b.x - a.x) * (-1.0f) + a.x * b.y - b.x * a.y);
 
                 if ((alpha >= 0.0f || ta > 0.0f) &&
-                    (beta >= 0.0f  || tb > 0.0f) &&
-                    (gama >= 0.0f  || tc > 0.0f)) {
-                    
+                    (beta  >= 0.0f || tb > 0.0f) &&
+                    (gama  >= 0.0f || tc > 0.0f)) {
+
                     SR_Color fragColor;
                     SR_Vec2f pixelPos(j, i);
 

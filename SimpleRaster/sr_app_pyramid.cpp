@@ -6,7 +6,7 @@
 #include "sr_global.h"
 #include "sr_fragment.h"
 
-#include "gr_app.h"
+#include "sr_app.h"
 
 //-----------------------------------------------------------------------------
 

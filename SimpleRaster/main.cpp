@@ -7,7 +7,7 @@
 #include "sr_fragment.h"
 
 #include "menu.h"
-#include "gr_app.h"
+#include "sr_app.h"
 
 //-----------------------------------------------------------------------------
 
