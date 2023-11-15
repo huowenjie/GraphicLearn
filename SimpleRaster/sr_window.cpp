@@ -3,7 +3,6 @@
 #include <cstdio>
 
 #include "sr_window.h"
-#include "mem/sr_new.h"
 
 //-----------------------------------------------------------------------------
 
@@ -528,8 +527,9 @@ void SR_Window::render()
 
         SDL_UpdateTexture(texture, nullptr, info->surfaceBuffer, winWidth * sizeof(Uint32));
         SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-        SDL_RenderPresent(renderer);
 
+        SDL_RenderPresent(renderer);
+        SDL_RenderClear(renderer);
         SDL_Delay(100);
     }
 }

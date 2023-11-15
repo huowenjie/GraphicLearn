@@ -9,7 +9,6 @@
 
 #include "menu.h"
 #include "sr_app.h"
-#include "mem/sr_new.h"
 
 //-----------------------------------------------------------------------------
 
@@ -26,7 +25,6 @@ static char mainMenu[][MENU_STR_LEN] =
 int main(int argc, char *argv[])
 {
     int index = 0;
-    SR_MEM_START;
 
     while (1) 
     {
@@ -43,8 +41,6 @@ int main(int argc, char *argv[])
     }
 
 end:
-    SR_PRINT_LEAK_INFO;
-    SR_MEM_END;
     return 0;
 }
 
