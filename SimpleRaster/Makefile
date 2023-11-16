@@ -1,7 +1,7 @@
 
 BIN_PATH := .
 INC_PATH := .
-SRC_PATH := . mem
+SRC_PATH := .
 LIB_PATH :=
 LIB_LIST := SDL2 dl
 
@@ -39,7 +39,7 @@ vpath %.h $(INC_PATH)
 
 # 定义模式编译规则
 %.o:%.cpp %.d
-	g++ -g -c $< -o $@ $(INC_PATHS) -Wall -Wformat=0 -DSR_MEMORY_DEBUG
+	g++ -g -c $< -o $@ $(INC_PATHS) -Wall -Wformat=0
 
 # 定义模式规则，生成依赖文件
 %.d:%.cpp

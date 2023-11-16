@@ -1,12 +1,11 @@
 #include <cmath>
 #include <cstdio>
 
-#include "sr_window.h"
 #include "sr_mat4x4f.h"
 #include "sr_global.h"
-#include "sr_fragment.h"
-
 #include "sr_app.h"
+
+#include "sr_window.h"
 
 //-----------------------------------------------------------------------------
 

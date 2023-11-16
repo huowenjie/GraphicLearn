@@ -485,6 +485,27 @@ bool SR_Window::zbufferTest(const SR_Vec2f &pos, float depth)
     return false;
 }
 
+bool SR_Window::insideTriangle(
+    const SR_Vec2f &a,
+    const SR_Vec2f &b,
+    const SR_Vec2f &c,
+    const SR_Vec2f &p
+)
+{
+    // 采用重心法来判断
+    float fa = (b.y - c.y) * a.x + (c.x - b.x) * a.y + b.x * c.y - c.x * b.y;
+    float fb = (c.y - a.y) * b.x + (a.x - c.x) * b.y + c.x * a.y - a.x * c.y;
+    float fc = (a.y - b.y) * c.x + (b.x - a.x) * c.y + a.x * b.y - b.x * a.y;
+
+    float alpha = ((b.y - c.y) * p.x + (c.x - b.x) * p.y + b.x * c.y - c.x * b.y) / fa;
+    float beta  = ((c.y - a.y) * p.x + (a.x - c.x) * p.y + c.x * a.y - a.x * c.y) / fb;
+    float gama  = ((a.y - b.y) * p.x + (b.x - a.x) * p.y + a.x * b.y - b.x * a.y) / fc;
+
+    return ((alpha > 0.0f) && (alpha < 1.0f)) &&
+           ((beta  > 0.0f) && (beta  < 1.0f)) &&
+           ((gama  > 0.0f) && (gama  < 1.0f));
+}
+
 void SR_Window::render()
 {
     SDL_Texture *texture = nullptr;
@@ -532,6 +553,20 @@ void SR_Window::render()
         SDL_RenderClear(renderer);
         SDL_Delay(100);
     }
+}
+
+void SR_Window::clearWindow()
+{
+    SDL_Renderer *renderer = nullptr;
+
+    if (!info) {
+        return;
+    }
+
+    renderer = info->renderer;
+
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
 }
 
 int SR_Window::getWidth() const

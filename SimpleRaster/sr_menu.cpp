@@ -1,13 +1,13 @@
 #include <cstdio>
 #include <cstring>
-#include "menu.h"
+#include "sr_menu.h"
 
 #define STR_BUFFER_LEN 64
 #define INT_BUFFER_LEN 64
 
 //-----------------------------------------------------------------------------
 
-const char *InputStr(const char *prompt)
+const char *inputStr(const char *prompt)
 {
     if (!prompt || !prompt[0])
     {
@@ -33,7 +33,7 @@ const char *InputStr(const char *prompt)
     return strBuff[0] ? strBuff : NULL;
 }
 
-int InputInt(const char *prompt)
+int inputInt(const char *prompt)
 {
     if (!prompt || !prompt[0])
     {
@@ -62,7 +62,7 @@ int InputInt(const char *prompt)
     return (fields > 0) ? ret : -1;
 }
 
-int SelectMenu(char (*menu)[MENU_STR_LEN], int count)
+int selectMenu(char (*menu)[MENU_STR_LEN], int count)
 {
     if (!menu || count < 2)
     {

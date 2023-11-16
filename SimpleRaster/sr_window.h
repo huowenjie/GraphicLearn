@@ -43,7 +43,7 @@ public:
     // 深度测试，如果 depth 深度大于 pos 位置原有的深度则返回 true，否则返回 false
     bool zbufferTest(const SR_Vec2f &pos, float depth);
 
-    //  TODO 判断点 p 是否在三角形 abc 内
+    //  判断点 p 是否在三角形 abc 内
     bool insideTriangle(
         const SR_Vec2f &a,
         const SR_Vec2f &b,
@@ -53,6 +53,9 @@ public:
 
     // 帧渲染
     void render();
+
+    // 清空屏幕
+    void clearWindow();
 
 public:
     int getWidth() const;
