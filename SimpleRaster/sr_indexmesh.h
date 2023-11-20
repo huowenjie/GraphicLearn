@@ -79,12 +79,14 @@ public:
     void addVertex(const SR_VertexInfo &info);
     void addVertex(const SR_Vec4f &v);
     void addVertex(const SR_Vec4f &v, const SR_Color &c);
+    void addVertex(const SR_Vec4f &v, const SR_Color &c, const SR_Vec3f &g);
 
     // 设置顶点
     void setVertex(int i, const SR_VertexInfo &info);
 
     void addIndexList(const SR_TriangleIndexList &list);
     void addIndexList(int a, int b, int c);
+    void addIndexList(int a, int b, int c, const SR_Vec3f &n);
 
     // 设置索引表
     void setIndexList(int i, const SR_TriangleIndexList &list);

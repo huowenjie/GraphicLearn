@@ -31,7 +31,7 @@ void renderPyramid()
 }
 
 // 光源位置
-static SR_Vec3f lightPos = SR_Vec3f(2.0f, 2.0f, 0.0f);
+static SR_Vec3f lightPos = SR_Vec3f(0.0f, 0.0f, 1.0f);
 
 // 光线颜色
 static SR_Color lightColor = SR_Color(1.0f);
@@ -41,6 +41,10 @@ static SR_Vec3f camPos = SR_Vec3f(0.0f, 0.0f, 1.7f);
 
 // 摄像机注视方向
 static SR_Vec3f targetPos = SR_Vec3f(0.0f, 0.0f, 0.0);
+
+// 初始旋转角度
+static float startRotate = (PI / 180.0f) * 42.0f;
+static float rotateSpeed = (PI / 180.0f);
 
 void start(SR_Window &window)
 {
@@ -59,30 +63,29 @@ void update(SR_Window &window)
     );
     SR_Mat4x4f cam = SR_Mat4x4f::cameraMatrix(camPos, targetPos);
     SR_Mat4x4f model = SR_Mat4x4f::translateMatrix(0.0f, 0.0f, 0.0f);
-    model = model * SR_Mat4x4f::rotateYMatrix(-PI / 3.0f);
 
-    // 透视变换至齐次裁剪空间
-    SR_Mat4x4f proj = per * cam;
+    startRotate += rotateSpeed;
+    model = model * SR_Mat4x4f::rotateYMatrix(startRotate);
 
     SR_IndexMesh mesh;
 
     // 一个测试四棱锥
-    mesh.addVertex(SR_Vec3f(0.0f, -1.0f, 0.0f), SR_Color(0.0f, 0.0f, 1.0f));
-    mesh.addVertex(SR_Vec3f(-0.5f, 0.0f, 0.5f), SR_Color(1.0f, 1.0f, 0.0f));
-    mesh.addVertex(SR_Vec3f(0.5f, 0.0f, 0.5f), SR_Color(1.0f, 0.0f, 1.0f));
-    mesh.addVertex(SR_Vec3f(0.5f, 0.0f, -0.5f), SR_Color(1.0f, 0.0f, 1.0f));
-    mesh.addVertex(SR_Vec3f(-0.5f, 0.0f, -0.5f), SR_Color(1.0f, 1.0f, 0.0f));
-    mesh.addVertex(SR_Vec3f(0.0f, 1.0f, 0.0f), SR_Color(0.0f, 0.0f, 1.0f));
+    mesh.addVertex(SR_Vec3f(-0.5f,  0.0f,  0.5f), SR_Color(0.0f, 0.0f, 0.0f));
+    mesh.addVertex(SR_Vec3f( 0.5f,  0.0f,  0.5f), SR_Color(0.0f, 0.0f, 0.0f));
+    mesh.addVertex(SR_Vec3f( 0.5f,  0.0f, -0.5f), SR_Color(0.0f, 0.0f, 0.0f));
+    mesh.addVertex(SR_Vec3f(-0.5f,  0.0f, -0.5f), SR_Color(0.0f, 0.0f, 0.0f));
+    mesh.addVertex(SR_Vec3f( 0.0f,  1.0f,  0.0f), SR_Color(0.0f, 0.0f, 0.0f));
+    mesh.addVertex(SR_Vec3f( 0.0f, -1.0f,  0.0f), SR_Color(0.0f, 0.0f, 0.0f));
 
-    mesh.addIndexList(0, 2, 1);
-    mesh.addIndexList(0, 3, 2);
-    mesh.addIndexList(0, 4, 3);
     mesh.addIndexList(0, 1, 4);
+    mesh.addIndexList(1, 2, 4);
+    mesh.addIndexList(2, 3, 4);
+    mesh.addIndexList(3, 0, 4);
 
-    mesh.addIndexList(5, 1, 2);
-    mesh.addIndexList(5, 2, 3);
-    mesh.addIndexList(5, 3, 4);
-    mesh.addIndexList(5, 4, 1);
+    mesh.addIndexList(0, 5, 1);
+    mesh.addIndexList(1, 5, 2);
+    mesh.addIndexList(2, 5, 3);
+    mesh.addIndexList(3, 5, 0);
 
     int num = mesh.getTriangleCount();
 
@@ -102,8 +105,8 @@ void update(SR_Window &window)
         SR_Vec3f n = bc.cross(ba);
         n.normalize();
 
-        // 同时将法线向量做模型变换
-        SR_Vec4f tmp = SR_Mat4x4f::transpose(SR_Mat4x4f::inverse(model)) * SR_Vec4f(n, 1.0f);
+        // 同时将法线向量做模型视图变换
+        SR_Vec4f tmp = SR_Mat4x4f::transpose(SR_Mat4x4f::inverse(cam * model)) * SR_Vec4f(n, 1.0f);
         list.normal = SR_Vec3f(tmp.x, tmp.y, tmp.z);
 
         mesh.setIndexList(i, list);
@@ -118,11 +121,11 @@ void update(SR_Window &window)
         SR_VertexInfo vi = clipMesh.getVertexInfo(i);
 
         // 对顶点进行模型变换然后记录顶点在世界坐标系的位置
-        SR_Vec4f global = model * vi.vertex;
+        SR_Vec4f global = cam * model * vi.vertex;
         vi.global = SR_Vec3f(global.x, global.y, global.z);
 
         // 透视变换
-        vi.vertex = proj * model * vi.vertex;
+        vi.vertex = per * cam * model * vi.vertex;
         clipMesh.setVertex(i, vi);
     }
 
@@ -144,15 +147,15 @@ void update(SR_Window &window)
         SR_VertexInfo ib = clipMesh.getVertexInfo(list.indexList[1]);
         SR_VertexInfo ic = clipMesh.getVertexInfo(list.indexList[2]);
 
-        // 透视除法
-        ia.vertex.homogenDivide();
-        ib.vertex.homogenDivide();
-        ic.vertex.homogenDivide();
-
         // 将顶点变换到屏幕空间
         ia.vertex = vp * ia.vertex;
         ib.vertex = vp * ib.vertex;
         ic.vertex = vp * ic.vertex;
+
+        // 透视除法
+        ia.vertex.homogenDivide();
+        ib.vertex.homogenDivide();
+        ic.vertex.homogenDivide();
 
         // 片元着色、深度测试、光栅化
         window.rasterizeTriangle(list, ia, ib, ic, fragmentShader);
@@ -162,12 +165,13 @@ void update(SR_Window &window)
 SR_Color fragmentShader(const SR_Fragment &frag)
 {
     // phong 着色
-    
+
     // 反射颜色
     SR_Color cr = frag.vertex.color;
+    SR_Vec3f position = frag.vertex.global;
 
     // 获取光照方向
-    SR_Vec3f lightDir = lightPos - frag.vertex.global;
+    SR_Vec3f lightDir = lightPos - position;
     lightDir.normalize();
     SR_Vec3f normal = frag.normal;
 
@@ -182,11 +186,11 @@ SR_Color fragmentShader(const SR_Fragment &frag)
     SR_Vec3f r = -lightDir + 2.0f * (normal.dot(lightDir)) * normal;
     r.normalize();
 
-    SR_Vec3f e = camPos - frag.vertex.global;
+    SR_Vec3f e = camPos - position;
     e.normalize();
 
     // 计算高光 max(0, e · r) ^ p
-    SR_Color highLight = lightColor * std::pow(srMaxf(0.0f, e.dot(r)), 32.0f);
+    SR_Color highLight = lightColor * std::pow(srMaxf(0.0f, e.dot(r)), 2.0f);
 #else
     // 简便方法计算高光 h = (e + l) / |e + l|
     SR_Vec3f e = camPos - frag.vertex.global;
@@ -195,12 +199,11 @@ SR_Color fragmentShader(const SR_Fragment &frag)
     h.normalize();
 
     // 计算高光 (h · n) ^ p
-    SR_Color highLight = lightColor * std::pow(h.dot(normal), 64.0f);
+    SR_Color highLight = lightColor * std::pow(h.dot(normal), 16.0f);
 #endif
 
     SR_Color fragColor = (diffuse + ambient) * cr + 0.6f * highLight;
     fragColor.clamp();
-
     return fragColor;
 }
 

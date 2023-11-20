@@ -416,19 +416,24 @@ void SR_Window::rasterizeTriangle(
                 float tb = fb * ((c.y - a.y) * (-1.0f) + (a.x - c.x) * (-1.0f) + c.x * a.y - a.x * c.y);
                 float tc = fc * ((a.y - b.y) * (-1.0f) + (b.x - a.x) * (-1.0f) + a.x * b.y - b.x * a.y);
 
-                if ((alpha >= 0.0f || ta > 0.0f) &&
-                    (beta  >= 0.0f || tb > 0.0f) &&
-                    (gama  >= 0.0f || tc > 0.0f)) {
+                if ((alpha > 0.0f || ta > 0.0f) &&
+                    (beta  > 0.0f || tb > 0.0f) &&
+                    (gama  > 0.0f || tc > 0.0f)) {
 
                     SR_Color fragColor;
                     SR_Vec2f pixelPos(j, i);
 
-                    fragColor.r = alpha * va.color.r + beta * vb.color.r + gama * vc.color.r;
-                    fragColor.g = alpha * va.color.g + beta * vb.color.g + gama * vc.color.g;
-                    fragColor.b = alpha * va.color.b + beta * vb.color.b + gama * vc.color.b;
+                    // 透视矫正
+                    float z = 
+                        1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
+                    float depth = alpha * va.vertex.z +  beta * vb.vertex.z +  gama * vc.vertex.z;
+                    depth *= z;
+
+                    // 颜色插值
+                    fragColor = alpha * va.color + beta * vb.color + gama * vc.color;
+                    fragColor = fragColor * z;
 
                     // 重心坐标插值计算深度
-                    float depth = alpha * va.vertex.z + beta * vb.vertex.z + gama * vc.vertex.z;
                     SR_Color pixelColor;
 
                     if (fragmentShader) {
@@ -439,10 +444,22 @@ void SR_Window::rasterizeTriangle(
                         vertInfo.vertex = SR_Vec4f(j, i, depth, 1.0f);
                         vertInfo.color = fragColor;
 
-                        // 计算三角形内部的点在世界空间的坐标
-                        vertInfo.global.x = alpha * va.global.x + beta * vb.global.x + gama * vc.global.x;
-                        vertInfo.global.y = alpha * va.global.y + beta * vb.global.y + gama * vc.global.y;
-                        vertInfo.global.z = alpha * va.global.z + beta * vb.global.z + gama * vc.global.z;
+                        // 片元坐标插值
+                        vertInfo.global.x = 
+                            alpha * va.global.x / va.vertex.w +
+                             beta * vb.global.x / vb.vertex.w +
+                             gama * vc.global.x / vc.vertex.w;
+                        vertInfo.global.y = 
+                            alpha * va.global.y / va.vertex.w +
+                             beta * vb.global.y / vb.vertex.w +
+                             gama * vc.global.y / vc.vertex.w;
+                        vertInfo.global.z = 
+                            alpha * va.global.z / va.vertex.w +
+                             beta * vb.global.z / vb.vertex.w +
+                             gama * vc.global.z / vc.vertex.w;
+                        vertInfo.global.x *= z;
+                        vertInfo.global.y *= z;
+                        vertInfo.global.z *= z;
 
                         frag.vertex = vertInfo;
                         frag.normal = list.normal;
