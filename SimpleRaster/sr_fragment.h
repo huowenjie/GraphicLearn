@@ -13,6 +13,8 @@ public:
     SR_VertexInfo vertex;
     SR_Vec3f normal;
     SR_Vec2f uv;
+    SR_Vec3f resolution;
+    SR_Vec3f fragCoord;
 };
 
 //-----------------------------------------------------------------------------

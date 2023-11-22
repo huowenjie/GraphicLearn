@@ -440,29 +440,25 @@ void SR_Window::rasterizeTriangle(
                         SR_Fragment frag;
                         SR_VertexInfo vertInfo;
 
+                        SR_Vec4f fragCoord;
+                        fragCoord = alpha * a + beta * b + gama * c;
+                        fragCoord = fragCoord * z;
+
                         // 计算 FragCoord
                         vertInfo.vertex = SR_Vec4f(j, i, depth, 1.0f);
                         vertInfo.color = fragColor;
 
                         // 片元坐标插值
-                        vertInfo.global.x = 
-                            alpha * va.global.x / va.vertex.w +
-                             beta * vb.global.x / vb.vertex.w +
-                             gama * vc.global.x / vc.vertex.w;
-                        vertInfo.global.y = 
-                            alpha * va.global.y / va.vertex.w +
-                             beta * vb.global.y / vb.vertex.w +
-                             gama * vc.global.y / vc.vertex.w;
-                        vertInfo.global.z = 
-                            alpha * va.global.z / va.vertex.w +
-                             beta * vb.global.z / vb.vertex.w +
-                             gama * vc.global.z / vc.vertex.w;
-                        vertInfo.global.x *= z;
-                        vertInfo.global.y *= z;
-                        vertInfo.global.z *= z;
+                        vertInfo.global = alpha * va.global + beta * vb.global + gama * vc.global;
+                        vertInfo.global = vertInfo.global * z;
 
                         frag.vertex = vertInfo;
                         frag.normal = list.normal;
+                        frag.resolution = SR_Vec3f((float)winWidth, (float)winHeight, 0.0f);
+                        frag.fragCoord = SR_Vec3f(
+                            fragCoord.x / fragCoord.w,
+                            fragCoord.y / fragCoord.w,
+                            fragCoord.z / fragCoord.w);
                         pixelColor = fragmentShader(frag);
                     } else {
                         pixelColor = fragColor;

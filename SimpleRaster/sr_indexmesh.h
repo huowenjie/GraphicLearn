@@ -147,11 +147,15 @@ public:
      * ，比如 bc 在外，a 在内，ab 和 ac 分别相交于 m 和 n，那么裁剪的结果即为三角形 amn，
      * SR_IndexMesh 删除处于裁剪平面外的两个顶点和索引表，重新构建三角网格。
      */
-    void clipTriangle(const SR_Vec4f &n);
+    void clipTriangle(const SR_Vec4f &n, const SR_Vec4f &q);
+    void clipTriangle();
 
 private:
-    // 齐次空间上点和平面的关系，返回值的绝对值为点到平面的距离
-    float pointToPlane(const SR_Vec4f &n, const SR_Vec4f &p);
+    /*
+     * 齐次空间上点和平面的关系，返回值 > 0，表示点在平面外；返回值 < 0，表示点在平面内
+     * n 为平面的法线，q为平面上任意一点
+     */
+    float pointToPlane(const SR_Vec4f &n, const SR_Vec4f &q, const SR_Vec4f &p);
 
 private:
     std::vector<SR_TriangleIndexList> indexArray;

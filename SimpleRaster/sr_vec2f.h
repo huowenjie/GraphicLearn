@@ -30,6 +30,9 @@ public:
     // p = (1 - t) * a + t * b 当 t = 0 时返回 a，否则返回 b
     static SR_Vec2f lerp(const SR_Vec2f &a, const SR_Vec2f &b, float t);
 
+    // if a.x > b.x x => x = 0.0f ; y 同理
+    static SR_Vec2f step(const SR_Vec2f &a, const SR_Vec2f &b);
+
 public:
     SR_Vec2f & operator=(const SR_Vec2f &v);
 
@@ -46,6 +49,9 @@ public:
 
     // 向量和实数相除
     SR_Vec2f operator/(float t) const;
+    
+    // 向量和向量相除
+    SR_Vec2f operator/(const SR_Vec2f &v) const;
 
     // 向量长度
     float length() const;

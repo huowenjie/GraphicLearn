@@ -68,6 +68,11 @@ SR_Vec2f SR_Vec2f::lerp(const SR_Vec2f &a, const SR_Vec2f &b, float t)
     return a * (1.0f - t) + b * t;
 }
 
+SR_Vec2f SR_Vec2f::step(const SR_Vec2f &a, const SR_Vec2f &b)
+{
+    return SR_Vec2f(a.x > b.x ? 0.0f : 1.0f, a.y > b.y ? 0.0f : 1.0f);
+}
+
 //---------------------------------------------------------
 
 SR_Vec2f & SR_Vec2f::operator=(const SR_Vec2f &v)
@@ -124,13 +129,25 @@ SR_Vec2f operator*(float t, const SR_Vec2f &v)
 
 SR_Vec2f SR_Vec2f::operator/(float t) const
 {
-    if (std::abs(t) < 1e-6) {
+    if (std::fabs(t) < 1e-6) {
         return SR_Vec2f();
     }
 
     SR_Vec2f vec = *this;
     vec.x /= t;
     vec.y /= t;
+    return vec;
+}
+
+SR_Vec2f SR_Vec2f::operator/(const SR_Vec2f &v) const
+{
+    if (std::fabs(v.x) < 1e-6 || std::fabs(v.y) < 1e-6) {
+        return SR_Vec2f();
+    }
+
+    SR_Vec2f vec = *this;
+    vec.x /= v.x;
+    vec.y /= v.y;
     return vec;
 }
 

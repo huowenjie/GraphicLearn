@@ -31,13 +31,13 @@ void renderPyramid()
 }
 
 // 光源位置
-static SR_Vec3f lightPos = SR_Vec3f(0.0f, 0.0f, 1.0f);
+static SR_Vec3f lightPos = SR_Vec3f(0.0f, 0.0f, 2.0f);
 
 // 光线颜色
 static SR_Color lightColor = SR_Color(1.0f);
 
 // 摄像机位置
-static SR_Vec3f camPos = SR_Vec3f(0.0f, 0.0f, 1.7f);
+static SR_Vec3f camPos = SR_Vec3f(0.0f, 0.0f, 2.0f);
 
 // 摄像机注视方向
 static SR_Vec3f targetPos = SR_Vec3f(0.0f, 0.0f, 0.0);
@@ -105,8 +105,8 @@ void update(SR_Window &window)
         SR_Vec3f n = bc.cross(ba);
         n.normalize();
 
-        // 同时将法线向量做模型视图变换
-        SR_Vec4f tmp = SR_Mat4x4f::transpose(SR_Mat4x4f::inverse(cam * model)) * SR_Vec4f(n, 1.0f);
+        // 同时将法线向量做模型变换
+        SR_Vec4f tmp = SR_Mat4x4f::transpose(SR_Mat4x4f::inverse(model)) * SR_Vec4f(n, 1.0f);
         list.normal = SR_Vec3f(tmp.x, tmp.y, tmp.z);
 
         mesh.setIndexList(i, list);
@@ -120,8 +120,8 @@ void update(SR_Window &window)
     for (int i = 0; i < vertCount; i++) {
         SR_VertexInfo vi = clipMesh.getVertexInfo(i);
 
-        // 对顶点进行模型变换然后记录顶点在世界坐标系的位置
-        SR_Vec4f global = cam * model * vi.vertex;
+        // 对顶点进行模型变换然后记录顶点在相机坐标系的位置
+        SR_Vec4f global = model * vi.vertex;
         vi.global = SR_Vec3f(global.x, global.y, global.z);
 
         // 透视变换
@@ -131,12 +131,13 @@ void update(SR_Window &window)
 
     // 在齐次坐标空间裁剪
     // 分别在 near far left right top bottom 平面对顶点进行裁剪
-    clipMesh.clipTriangle(SR_Vec4f(0.0f, 0.0f, -1.0f, 1.0f));
-    clipMesh.clipTriangle(SR_Vec4f(0.0f, 0.0f, 1.0f, 1.0f));
-    clipMesh.clipTriangle(SR_Vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-    clipMesh.clipTriangle(SR_Vec4f(-1.0f, 0.0f, 0.0f, 1.0f));
-    clipMesh.clipTriangle(SR_Vec4f(0.0f, -1.0f, 0.0f, 1.0f));
-    clipMesh.clipTriangle(SR_Vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+    // clipMesh.clipTriangle(SR_Vec4f(0.0f, 0.0f, -1.0f, 1.0f));
+    // clipMesh.clipTriangle(SR_Vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+    // clipMesh.clipTriangle(SR_Vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+    // clipMesh.clipTriangle(SR_Vec4f(-1.0f, 0.0f, 0.0f, 1.0f));
+    // clipMesh.clipTriangle(SR_Vec4f(0.0f, -1.0f, 0.0f, 1.0f));
+    // clipMesh.clipTriangle(SR_Vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+    clipMesh.clipTriangle();
 
     num = clipMesh.getTriangleCount();
 
@@ -190,7 +191,7 @@ SR_Color fragmentShader(const SR_Fragment &frag)
     e.normalize();
 
     // 计算高光 max(0, e · r) ^ p
-    SR_Color highLight = lightColor * std::pow(srMaxf(0.0f, e.dot(r)), 2.0f);
+    SR_Color highLight = lightColor * std::pow(srMaxf(0.0f, e.dot(r)), 3.0f);
 #else
     // 简便方法计算高光 h = (e + l) / |e + l|
     SR_Vec3f e = camPos - frag.vertex.global;
@@ -202,7 +203,7 @@ SR_Color fragmentShader(const SR_Fragment &frag)
     SR_Color highLight = lightColor * std::pow(h.dot(normal), 16.0f);
 #endif
 
-    SR_Color fragColor = (diffuse + ambient) * cr + 0.6f * highLight;
+    SR_Color fragColor = (diffuse + ambient) * cr + highLight;
     fragColor.clamp();
     return fragColor;
 }

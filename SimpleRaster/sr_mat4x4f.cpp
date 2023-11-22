@@ -230,6 +230,20 @@ SR_Mat4x4f SR_Mat4x4f::perspectiveMatrix(const SR_Vec3f &l, const SR_Vec3f &h)
     return per;
 }
 
+SR_Mat4x4f SR_Mat4x4f::orthoMatrix(const SR_Vec3f &l, const SR_Vec3f &h)
+{
+    SR_Mat4x4f ortho;
+
+    ortho.m00 = 2.0f / (h.x - l.x);
+    ortho.m11 = 2.0f / (h.y - l.y);
+    ortho.m22 = 2.0f / (h.z - l.z);
+
+    ortho.m03 = (h.x + l.x) / (l.x - h.x);
+    ortho.m13 = (h.y + l.y) / (l.y - h.y);
+    ortho.m23 = (h.z + l.z) / (l.z - h.z);
+    return ortho;
+}
+
 //-----------------------------------------------------------------------------
 
 SR_Mat4x4f SR_Mat4x4f::unitMatrix()

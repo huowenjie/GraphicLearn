@@ -18,6 +18,8 @@ float srClampf(float val, float max, float min);
 float srMaxf(float a, float b);
 float srMinf(float a, float b);
 
+//-----------------------------------------------------------------------------
+
 // 随机数
 void initRandSeed();
 

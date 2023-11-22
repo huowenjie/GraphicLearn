@@ -77,6 +77,14 @@ public: // 常用的 3D 线性变换矩阵
      */
     static SR_Mat4x4f perspectiveMatrix(const SR_Vec3f &l, const SR_Vec3f &h);
 
+    /**
+     * 正交投影矩阵
+     * 
+     * 将体积盒 [xl, xh] x [yl, yh] x [zl, zh] 中的物体
+     * 进行正交变换，同时投影到规范化坐标系统 [-1, 1] 上
+     */
+    static SR_Mat4x4f orthoMatrix(const SR_Vec3f &l, const SR_Vec3f &h);
+
 public:
     // 单位矩阵
     static SR_Mat4x4f unitMatrix();
