@@ -38,7 +38,7 @@ public:
 public:
     int indexList[3];
 
-    // 法线向量
+    // 三角形面法线向量
     SR_Vec3f normal;
 };
 
@@ -65,6 +65,12 @@ public:
 
     // 顶点在世界坐标系中的位置
     SR_Vec3f global;
+
+    // 顶点法线
+    SR_Vec3f normal;
+
+    // 顶点纹理 UV 坐标
+    SR_Vec2f uv;
 };
 
 // 索引网格

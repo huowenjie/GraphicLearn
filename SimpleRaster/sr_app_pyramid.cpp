@@ -129,16 +129,7 @@ void update(SR_Window &window)
         clipMesh.setVertex(i, vi);
     }
 
-    // 在齐次坐标空间裁剪
-    // 分别在 near far left right top bottom 平面对顶点进行裁剪
-    // clipMesh.clipTriangle(SR_Vec4f(0.0f, 0.0f, -1.0f, 1.0f));
-    // clipMesh.clipTriangle(SR_Vec4f(0.0f, 0.0f, 1.0f, 1.0f));
-    // clipMesh.clipTriangle(SR_Vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-    // clipMesh.clipTriangle(SR_Vec4f(-1.0f, 0.0f, 0.0f, 1.0f));
-    // clipMesh.clipTriangle(SR_Vec4f(0.0f, -1.0f, 0.0f, 1.0f));
-    // clipMesh.clipTriangle(SR_Vec4f(0.0f, 1.0f, 0.0f, 1.0f));
     clipMesh.clipTriangle();
-
     num = clipMesh.getTriangleCount();
 
     for (int i = 0; i < num; i++) {
@@ -168,13 +159,17 @@ SR_Color fragmentShader(const SR_Fragment &frag)
     // phong 着色
 
     // 反射颜色
-    SR_Color cr = frag.vertex.color;
-    SR_Vec3f position = frag.vertex.global;
+    SR_Color cr = frag.getFragColor();
+
+    // 获取片元在世界坐标的位置
+    SR_Vec3f position = frag.getFragGlobal();
 
     // 获取光照方向
     SR_Vec3f lightDir = lightPos - position;
     lightDir.normalize();
-    SR_Vec3f normal = frag.normal;
+
+    // 获取面法线向量
+    SR_Vec3f normal = frag.getFragSurfaceNormal();
 
     // 计算漫反射光
     float diff = srMaxf(0.0f, lightDir.dot(normal));

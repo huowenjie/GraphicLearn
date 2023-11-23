@@ -362,20 +362,6 @@ void SR_Window::rasterizeTriangle(
     float fb = 0.0f;
     float fc = 0.0f;
 
-#if 0
-    if (a.x > winWidth - 1 || a.x < 0 ||
-        b.x > winWidth - 1 || b.x < 0 ||
-        c.x > winWidth - 1 || c.x < 0) {
-        return;
-    }
-
-    if (a.y > winHeight - 1 || a.y < 0 ||
-        b.y > winHeight - 1 || b.y < 0 ||
-        c.y > winHeight - 1 || c.y < 0) {
-        return;
-    }
-#endif
-
     /*
      * 1.确定三角形的包围盒 xmin xmax ymin ymax；
      * 2.将像素点索引代入两点式求出重心坐标系数 a，b，c；
@@ -419,52 +405,55 @@ void SR_Window::rasterizeTriangle(
                 if ((alpha > 0.0f || ta > 0.0f) &&
                     (beta  > 0.0f || tb > 0.0f) &&
                     (gama  > 0.0f || tc > 0.0f)) {
+                    SR_Fragment frag;
 
-                    SR_Color fragColor;
-                    SR_Vec2f pixelPos(j, i);
-
-                    // 透视矫正
+                    // 透视矫正参数
                     float z = 
                         1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
-                    float depth = alpha * va.vertex.z +  beta * vb.vertex.z +  gama * vc.vertex.z;
-                    depth *= z;
 
                     // 颜色插值
-                    fragColor = alpha * va.color + beta * vb.color + gama * vc.color;
-                    fragColor = fragColor * z;
+                    frag.interpolateFragColor(alpha, beta, gama, z, va.color, vb.color, vc.color);
 
-                    // 重心坐标插值计算深度
+                    // 片元坐标插值
+                    SR_Vec4f fragCoord;
+                    fragCoord = alpha * a + beta * b + gama * c;
+                    fragCoord = fragCoord * z;
+
+                    frag.setFragCoord(
+                        SR_Vec3f(
+                            fragCoord.x / fragCoord.w,
+                            fragCoord.y / fragCoord.w,
+                            fragCoord.z / fragCoord.w
+                        )
+                    );
+
+                    // 像素最终颜色
                     SR_Color pixelColor;
 
                     if (fragmentShader) {
-                        SR_Fragment frag;
-                        SR_VertexInfo vertInfo;
+                        // 片元世界空间坐标插值
+                        frag.interpolateFragGlobal(alpha, beta, gama, z, va.global, vb.global, vc.global);
 
-                        SR_Vec4f fragCoord;
-                        fragCoord = alpha * a + beta * b + gama * c;
-                        fragCoord = fragCoord * z;
+                        // 顶点法线插值
+                        frag.interpolateNormal(alpha, beta, gama, z, va.normal, vb.normal, vc.normal);
 
-                        // 计算 FragCoord
-                        vertInfo.vertex = SR_Vec4f(j, i, depth, 1.0f);
-                        vertInfo.color = fragColor;
+                        // 设置面法线
+                        frag.setFragSurfaceNormal(list.normal);
 
-                        // 片元坐标插值
-                        vertInfo.global = alpha * va.global + beta * vb.global + gama * vc.global;
-                        vertInfo.global = vertInfo.global * z;
+                        // uv 坐标插值
+                        frag.interpolateUV(alpha, beta, gama, z, va.uv, vb.uv, vc.uv);
 
-                        frag.vertex = vertInfo;
-                        frag.normal = list.normal;
-                        frag.resolution = SR_Vec3f((float)winWidth, (float)winHeight, 0.0f);
-                        frag.fragCoord = SR_Vec3f(
-                            fragCoord.x / fragCoord.w,
-                            fragCoord.y / fragCoord.w,
-                            fragCoord.z / fragCoord.w);
+                        // 设置分辨率
+                        frag.setResolution((float)winWidth, (float)winHeight);
                         pixelColor = fragmentShader(frag);
                     } else {
-                        pixelColor = fragColor;
+                        pixelColor = frag.getFragColor();
                     }
 
-                    if (zbufferTest(pixelPos, depth)) {
+                    SR_Vec2f pixelPos(j, i);
+
+                    // 深度测试
+                    if (zbufferTest(pixelPos, fragCoord.z)) {
                         // 光栅化
                         drawPixel(pixelPos, pixelColor);
                     }

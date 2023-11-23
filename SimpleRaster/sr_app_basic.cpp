@@ -144,7 +144,7 @@ void twoTriangleUpdate(SR_Window &window)
         SR_Vec3f(1.0f, 1.0f, 1.0f)
     );
     SR_Mat4x4f cam = SR_Mat4x4f::cameraMatrix(camPos, targetPos);
-    SR_Mat4x4f model = SR_Mat4x4f::translateMatrix(2.0f, 0.0f, 0.0f);
+    SR_Mat4x4f model = SR_Mat4x4f::translateMatrix(0.0f, 0.0f, 0.0f);
 
     // 透视变换至齐次裁剪空间
     SR_Mat4x4f proj = per * cam;
@@ -265,9 +265,9 @@ SR_Color pietMondriaShader(const SR_Fragment &frag)
     SR_Color blue = SR_Color(0.0f, 0.36f, 0.6f);
     SR_Color black = SR_Color(0.12f, 0.14f, 0.15f);
 
-    SR_Vec2f coord = SR_Vec2f(frag.fragCoord.x, frag.fragCoord.y);
-    SR_Vec2f xy = SR_Vec2f(frag.resolution.x, frag.resolution.y);
-    SR_Vec2f st = coord / xy;
+    SR_Vec3f coord = frag.getFragCoord();
+    SR_Vec3f resolution = frag.getResolution();
+    SR_Vec2f st = SR_Vec2f(coord.x / resolution.x, coord.y / resolution.y);
 
     SR_Color back = SR_Color(0.96f, 0.93f, 0.87f);
 
@@ -312,7 +312,7 @@ void drawPietMondria(SR_Window &window)
 
     // 构建变换矩阵
     SR_Mat4x4f vp = SR_Mat4x4f::viewportMatrix(w, h);
-    SR_Mat4x4f per = SR_Mat4x4f::orthoMatrix(
+    SR_Mat4x4f ortho = SR_Mat4x4f::orthoMatrix(
         SR_Vec3f(-1.0f, -1.0f, -1.0f),
         SR_Vec3f(1.0f, 1.0f, 1.0f)
     );
@@ -321,7 +321,7 @@ void drawPietMondria(SR_Window &window)
     SR_Mat4x4f model = SR_Mat4x4f::translateMatrix(0.0f, 0.0f, 0.0f);
 
     // 透视变换至齐次裁剪空间
-    SR_Mat4x4f proj = per * cam;
+    SR_Mat4x4f proj = ortho * cam;
 
     SR_IndexMesh mesh;
 
