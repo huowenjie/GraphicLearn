@@ -39,15 +39,18 @@ SR_Window::SR_Window(int width, int height)
     winHeight = height;
 
     Uint32 *buffer = new Uint32[width * height];
-    float *zbuffer = new float[width * height];
+    float *zbuf = new float[width * height];
 
     for (int i = 0; i < width * height; i++) {
         buffer[i] = 0x00000000;
-        zbuffer[i] = -FLT_MAX;
+    }
+
+    for (int i = 0; i < width * height; i++) {
+        zbuf[i] = -FLT_MAX;
     }
 
     info->surfaceBuffer = buffer;
-    info->zBuffer = zbuffer;
+    info->zBuffer = zbuf;
     this->start = nullptr;
     this->update = nullptr;
 }
@@ -397,14 +400,15 @@ void SR_Window::rasterizeTriangle(
             float beta = ((c.y - a.y) * j + (a.x - c.x) * i + c.x * a.y - a.x * c.y) / fb;
             float gama = ((a.y - b.y) * j + (b.x - a.x) * i + a.x * b.y - b.x * a.y) / fc;
 
-            if (alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) {
+            if ((alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) &&
+                 alpha <= 1.0f && beta <= 1.0f && gama <= 1.0f) {
                 float ta = fa * ((b.y - c.y) * (-1.0f) + (c.x - b.x) * (-1.0f) + b.x * c.y - c.x * b.y);
                 float tb = fb * ((c.y - a.y) * (-1.0f) + (a.x - c.x) * (-1.0f) + c.x * a.y - a.x * c.y);
                 float tc = fc * ((a.y - b.y) * (-1.0f) + (b.x - a.x) * (-1.0f) + a.x * b.y - b.x * a.y);
 
-                if ((alpha > 0.0f || ta > 0.0f) &&
-                    (beta  > 0.0f || tb > 0.0f) &&
-                    (gama  > 0.0f || tc > 0.0f)) {
+                if ((alpha >= 0.0f || ta > 0.0f) &&
+                    (beta  >= 0.0f || tb > 0.0f) &&
+                    (gama  >= 0.0f || tc > 0.0f)) {
                     SR_Fragment frag;
 
                     // 透视矫正参数
@@ -450,6 +454,7 @@ void SR_Window::rasterizeTriangle(
                         pixelColor = frag.getFragColor();
                     }
 
+                    pixelColor = pixelColor;
                     SR_Vec2f pixelPos(j, i);
 
                     // 深度测试
@@ -483,7 +488,6 @@ bool SR_Window::zbufferTest(const SR_Vec2f &pos, float depth)
         zbuf[y * winWidth + x] = depth;
         return true;
     }
-
     return false;
 }
 
@@ -503,9 +507,9 @@ bool SR_Window::insideTriangle(
     float beta  = ((c.y - a.y) * p.x + (a.x - c.x) * p.y + c.x * a.y - a.x * c.y) / fb;
     float gama  = ((a.y - b.y) * p.x + (b.x - a.x) * p.y + a.x * b.y - b.x * a.y) / fc;
 
-    return ((alpha > 0.0f) && (alpha < 1.0f)) &&
-           ((beta  > 0.0f) && (beta  < 1.0f)) &&
-           ((gama  > 0.0f) && (gama  < 1.0f));
+    return ((alpha >= 0.0f) && (alpha <= 1.0f)) &&
+           ((beta  >= 0.0f) && (beta  <= 1.0f)) &&
+           ((gama  >= 0.0f) && (gama  <= 1.0f));
 }
 
 void SR_Window::render()
@@ -541,6 +545,9 @@ void SR_Window::render()
 
         for (int i = 0; i < count; i++) {
             buffer[i] = 0x00000000;
+        }
+
+        for (int i = 0; i < count; i++) {
             zbuffer[i] = -FLT_MAX;
         }
 

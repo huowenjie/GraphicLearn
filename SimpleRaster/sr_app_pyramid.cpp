@@ -43,7 +43,7 @@ static SR_Vec3f camPos = SR_Vec3f(0.0f, 0.0f, 2.0f);
 static SR_Vec3f targetPos = SR_Vec3f(0.0f, 0.0f, 0.0);
 
 // 初始旋转角度
-static float startRotate = (PI / 180.0f) * 42.0f;
+static float startRotate = (PI / 180.0f) * 45.0f;
 static float rotateSpeed = (PI / 180.0f);
 
 void start(SR_Window &window)
@@ -70,12 +70,12 @@ void update(SR_Window &window)
     SR_IndexMesh mesh;
 
     // 一个测试四棱锥
-    mesh.addVertex(SR_Vec3f(-0.5f,  0.0f,  0.5f), SR_Color(0.0f, 0.0f, 0.0f));
-    mesh.addVertex(SR_Vec3f( 0.5f,  0.0f,  0.5f), SR_Color(0.0f, 0.0f, 0.0f));
-    mesh.addVertex(SR_Vec3f( 0.5f,  0.0f, -0.5f), SR_Color(0.0f, 0.0f, 0.0f));
-    mesh.addVertex(SR_Vec3f(-0.5f,  0.0f, -0.5f), SR_Color(0.0f, 0.0f, 0.0f));
-    mesh.addVertex(SR_Vec3f( 0.0f,  1.0f,  0.0f), SR_Color(0.0f, 0.0f, 0.0f));
-    mesh.addVertex(SR_Vec3f( 0.0f, -1.0f,  0.0f), SR_Color(0.0f, 0.0f, 0.0f));
+    mesh.addVertex(SR_Vec3f(-0.5f,  0.0f,  0.5f), SR_Color(0.5f, 0.5f, 0.0f));
+    mesh.addVertex(SR_Vec3f( 0.5f,  0.0f,  0.5f), SR_Color(0.5f, 0.5f, 0.0f));
+    mesh.addVertex(SR_Vec3f( 0.5f,  0.0f, -0.5f), SR_Color(0.5f, 0.5f, 0.0f));
+    mesh.addVertex(SR_Vec3f(-0.5f,  0.0f, -0.5f), SR_Color(0.5f, 0.2f, 1.0f));
+    mesh.addVertex(SR_Vec3f( 0.0f,  1.0f,  0.0f), SR_Color(0.5f, 0.2f, 1.0f));
+    mesh.addVertex(SR_Vec3f( 0.0f, -1.0f,  0.0f), SR_Color(0.5f, 0.2f, 1.0f));
 
     mesh.addIndexList(0, 1, 4);
     mesh.addIndexList(1, 2, 4);
