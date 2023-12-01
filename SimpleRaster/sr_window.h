@@ -43,6 +43,9 @@ public:
     // 深度测试，如果 depth 深度大于 pos 位置原有的深度则返回 true，否则返回 false
     bool zbufferTest(const SR_Vec2f &pos, float depth);
 
+    // 子像素深度测试，如果 depth 深度大于 pos 位置原有的深度则返回 true，否则返回 false
+    bool zbufferChildTest(const SR_Vec2f &pos, float depth);
+
     //  判断点 p 是否在三角形 abc 内
     bool insideTriangle(
         const SR_Vec2f &a,
@@ -63,8 +66,6 @@ public:
 
 private:
     SR_WinCtx *info;
-    int winWidth;
-    int winHeight;
 
     void (*start)(SR_Window &);
     void (*update)(SR_Window &);

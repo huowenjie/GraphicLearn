@@ -10,15 +10,50 @@
 class SR_WinCtx
 {
 public:
-    SR_WinCtx()
-    {
-        window = nullptr;
-        texture = nullptr;
-        renderer = nullptr;
+    SR_WinCtx();
+    ~SR_WinCtx();
 
-        surfaceBuffer = nullptr;
-        zBuffer = nullptr;
-    }
+public:
+    // 创建缓冲区，samplingCount 子缓冲采样层次 1、0=不缩放 2=2x2 4=4x4 8=8x8
+    void createBuffer(int width, int height, int sampleLayer = 2);
+
+    // 销毁缓冲区
+    void destroyBuffer();
+
+    // 清空缓冲区
+    void clearBuffer(Uint32 color = 0, float dept = -FLT_MAX);
+
+    // 判断颜色缓冲区是否被赋值
+    bool isChildBeSet(const SR_Vec2f &parent, int x, int y);
+
+    // 获取 parent 点像素下 (x, y) 点子像素的颜色值
+    SR_Color getChildColor(const SR_Vec2f &parent, int x, int y);
+
+    // 获取子像素点在父像素 parent 点下的浮点坐标
+    SR_Vec2f getChildPos(const SR_Vec2f &parent, int x, int y);
+
+    // 设置 parent 点像素下 (x, y) 的子像素颜色值
+    void setChildColor(const SR_Vec2f &parent, int x, int y, const SR_Color &color);
+
+    // 对子像素做深度测试
+    bool childZbufferTest(const SR_Vec2f &parent, int x, int y, float depth);
+
+    // // 设置颜色
+    // void setSurfaceColor(Uint32 color, int x, int y);
+    // void setChildSurfaceColor(Uint32 color, int x, int y);
+
+    // // 设置深度
+    // void setDepth(float depth, int x, int y);
+    // void setChildDepth(float depth, int x, int y);
+
+    // // 获取颜色
+    // Uint32 getSurfaceColor(int x, int y) const;
+    // Uint32 getChildSurfaceColor(int x, int y) const;
+
+    // // 获取深度
+    // float getDepth(int x, int y) const;
+    // float setChildDepth(int x, int y) const;
+
 public:
     SDL_Window *window;
     SDL_Texture *texture;
@@ -30,27 +65,26 @@ public:
 
     // 深度缓冲
     float *zBuffer;
+
+    // 缓冲区尺寸
+    int bufferWidth;
+    int bufferHeight;
+
+    // 深度子缓冲层
+    float *zBufferChild;
+
+    // 颜色子缓冲层
+    Uint32 *surfaceChild;
+
+    // 子缓冲采样层次 1、0=不缩放 2=2x2 4=4x4 8=8x8
+    int childSampleLayer;
 };
 
 SR_Window::SR_Window(int width, int height)
 {
     info = new SR_WinCtx();
-    winWidth = width;
-    winHeight = height;
 
-    Uint32 *buffer = new Uint32[width * height];
-    float *zbuf = new float[width * height];
-
-    for (int i = 0; i < width * height; i++) {
-        buffer[i] = 0x00000000;
-    }
-
-    for (int i = 0; i < width * height; i++) {
-        zbuf[i] = -FLT_MAX;
-    }
-
-    info->surfaceBuffer = buffer;
-    info->zBuffer = zbuf;
+    info->createBuffer(width, height);
     this->start = nullptr;
     this->update = nullptr;
 }
@@ -58,15 +92,7 @@ SR_Window::SR_Window(int width, int height)
 SR_Window::~SR_Window()
 {
     if (info) {
-        if (info->surfaceBuffer) {
-            delete info->surfaceBuffer;
-            info->surfaceBuffer = nullptr;
-        }
-
-        if (info->zBuffer) {
-            delete info->zBuffer;
-            info->zBuffer = nullptr;
-        }
+        info->destroyBuffer();
 
         delete info;
         info = nullptr;
@@ -91,8 +117,8 @@ bool SR_Window::initialize()
         "SDL2 Pixel Drawing",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        winWidth,
-        winHeight,
+        info->bufferWidth,
+        info->bufferHeight,
         0
     );
 
@@ -109,8 +135,8 @@ bool SR_Window::initialize()
         renderer,
         SDL_PIXELFORMAT_ARGB8888,
         SDL_TEXTUREACCESS_STATIC,
-        winWidth,
-        winHeight
+        info->bufferWidth,
+        info->bufferHeight
     );
 
     if (!texture) {
@@ -174,26 +200,38 @@ void SR_Window::setUpdate(void (*update)(SR_Window &))
 
 void SR_Window::drawPixel(const SR_Vec2f &pos, const SR_Color &color)
 {
+    if (!info) {
+        return;
+    }
+
+    int w = info->bufferWidth;
+    int h = info->bufferHeight;
+    
     int x = pos.x;
     int y = pos.y;
+
     Uint32 *surfaceBuffer = info->surfaceBuffer;
 
-    if (x > winWidth - 1 || x < 0) {
+    if (x > w - 1 || x < 0) {
         return;
     }
 
-    if (y > winHeight - 1 || y < 0) {
+    if (y > h - 1 || y < 0) {
         return;
     }
 
-    y = winHeight - 1 - y;
+    y = h - 1 - y;
 
     // 点光栅化
-    surfaceBuffer[y * winWidth + x] = color.toUintRGB();
+    surfaceBuffer[y * w + x] = color.toUintRGB();
 }
 
 void SR_Window::drawLine(const SR_Vec2f &a, const SR_Vec2f &b, const SR_Color &color)
 {
+    if (!info) {
+        return;
+    }
+
     int x0 = a.x;
     int y0 = a.y;
     int x1 = b.x;
@@ -207,13 +245,16 @@ void SR_Window::drawLine(const SR_Vec2f &a, const SR_Vec2f &b, const SR_Color &c
 
     float d = 0.0f;
 
-    if (x0 > winWidth - 1 || x0 < 0 ||
-        x1 > winWidth - 1 || x1 < 0 ) {
+    int w = info->bufferWidth;
+    int h = info->bufferHeight;
+
+    if (x0 > w - 1 || x0 < 0 ||
+        x1 > w - 1 || x1 < 0 ) {
         return;
     }
 
-    if (y0 > winHeight - 1 || y0 < 0 ||
-        y1 > winHeight - 1 || y1 < 0) {
+    if (y0 > h - 1 || y0 < 0 ||
+        y1 > h - 1 || y1 < 0) {
         return;
     }
 
@@ -349,6 +390,13 @@ void SR_Window::rasterizeTriangle(
     SR_Color (*fragmentShader)(const SR_Fragment &)
 )
 {
+    if (!info) {
+        return;
+    }
+
+    int w = info->bufferWidth;
+    int h = info->bufferHeight;
+
     const SR_Vec4f &a = va.vertex;
     const SR_Vec4f &b = vb.vertex;
     const SR_Vec4f &c = vc.vertex;
@@ -368,9 +416,7 @@ void SR_Window::rasterizeTriangle(
     /*
      * 1.确定三角形的包围盒 xmin xmax ymin ymax；
      * 2.将像素点索引代入两点式求出重心坐标系数 a，b，c；
-     * 3.拟定一个屏幕外的点 (-1, -1)，两个三角形共线时，以共线为分隔线，其中一个三角形的
-     *   边上的像素点必定和该屏幕外点处于同一侧，以此来判断是否绘制；
-     * 4.根据 a、b、c 来确定像素点的颜色
+     * 3.根据 a、b、c 来确定像素点的颜色
      * 
      * f01(x, y) = (y0 - y1)x + (x1 - x0)y + x0y1 - x1y0
      * f12(x, y) = (y1 - y2)x + (x2 - x1)y + x1y2 - x2y1
@@ -396,72 +442,126 @@ void SR_Window::rasterizeTriangle(
 
     for (i = ymin; i <= ymax; i++) {
         for (j = xmin; j <= xmax; j++) {
-            float alpha = ((b.y - c.y) * j + (c.x - b.x) * i + b.x * c.y - c.x * b.y) / fa;
-            float beta = ((c.y - a.y) * j + (a.x - c.x) * i + c.x * a.y - a.x * c.y) / fb;
-            float gama = ((a.y - b.y) * j + (b.x - a.x) * i + a.x * b.y - b.x * a.y) / fc;
+            float tx = j;
+            float ty = i;
+
+            float alpha = ((b.y - c.y) * tx + (c.x - b.x) * ty + b.x * c.y - c.x * b.y) / fa;
+            float beta = ((c.y - a.y) * tx + (a.x - c.x) * ty + c.x * a.y - a.x * c.y) / fb;
+            float gama = ((a.y - b.y) * tx + (b.x - a.x) * ty + a.x * b.y - b.x * a.y) / fc;
 
             if ((alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) &&
                  alpha <= 1.0f && beta <= 1.0f && gama <= 1.0f) {
-                float ta = fa * ((b.y - c.y) * (-1.0f) + (c.x - b.x) * (-1.0f) + b.x * c.y - c.x * b.y);
-                float tb = fb * ((c.y - a.y) * (-1.0f) + (a.x - c.x) * (-1.0f) + c.x * a.y - a.x * c.y);
-                float tc = fc * ((a.y - b.y) * (-1.0f) + (b.x - a.x) * (-1.0f) + a.x * b.y - b.x * a.y);
+                SR_Fragment frag;
 
-                if ((alpha >= 0.0f || ta > 0.0f) &&
-                    (beta  >= 0.0f || tb > 0.0f) &&
-                    (gama  >= 0.0f || tc > 0.0f)) {
-                    SR_Fragment frag;
+                // 透视矫正参数
+                float z = 
+                    1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
 
-                    // 透视矫正参数
-                    float z = 
-                        1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
+                // 颜色插值
+                frag.interpolateFragColor(alpha, beta, gama, z, va.color, vb.color, vc.color);
 
-                    // 颜色插值
-                    frag.interpolateFragColor(alpha, beta, gama, z, va.color, vb.color, vc.color);
+                // 片元坐标插值
+                SR_Vec4f fragCoord;
+                fragCoord = alpha * a + beta * b + gama * c;
+                fragCoord = fragCoord * z;
 
-                    // 片元坐标插值
-                    SR_Vec4f fragCoord;
-                    fragCoord = alpha * a + beta * b + gama * c;
-                    fragCoord = fragCoord * z;
+                frag.setFragCoord(
+                    SR_Vec3f(
+                        fragCoord.x / fragCoord.w,
+                        fragCoord.y / fragCoord.w,
+                        fragCoord.z / fragCoord.w
+                    )
+                );
 
-                    frag.setFragCoord(
-                        SR_Vec3f(
-                            fragCoord.x / fragCoord.w,
-                            fragCoord.y / fragCoord.w,
-                            fragCoord.z / fragCoord.w
-                        )
-                    );
+                // 像素最终颜色
+                SR_Color pixelColor;
 
-                    // 像素最终颜色
-                    SR_Color pixelColor;
+                if (fragmentShader) {
+                    // 片元世界空间坐标插值
+                    frag.interpolateFragGlobal(alpha, beta, gama, z, va.global, vb.global, vc.global);
 
-                    if (fragmentShader) {
-                        // 片元世界空间坐标插值
-                        frag.interpolateFragGlobal(alpha, beta, gama, z, va.global, vb.global, vc.global);
+                    // 顶点法线插值
+                    frag.interpolateNormal(alpha, beta, gama, z, va.normal, vb.normal, vc.normal);
 
-                        // 顶点法线插值
-                        frag.interpolateNormal(alpha, beta, gama, z, va.normal, vb.normal, vc.normal);
+                    // 设置面法线
+                    frag.setFragSurfaceNormal(list.normal);
 
-                        // 设置面法线
-                        frag.setFragSurfaceNormal(list.normal);
+                    // uv 坐标插值
+                    frag.interpolateUV(alpha, beta, gama, z, va.uv, vb.uv, vc.uv);
 
-                        // uv 坐标插值
-                        frag.interpolateUV(alpha, beta, gama, z, va.uv, vb.uv, vc.uv);
+                    // 设置分辨率
+                    frag.setResolution((float)w, (float)h);
+                    pixelColor = fragmentShader(frag);
+                } else {
+                    pixelColor = frag.getFragColor();
+                }
 
-                        // 设置分辨率
-                        frag.setResolution((float)winWidth, (float)winHeight);
-                        pixelColor = fragmentShader(frag);
-                    } else {
-                        pixelColor = frag.getFragColor();
+                pixelColor = pixelColor;
+                SR_Vec2f pixelPos(tx, ty);
+
+                /*
+                 * 以 2x2 拆分采样法为例
+                 * 
+                 * 1. 遍历 j、i 像素点当前所有子像素，判定子像素中心点是否在三角形内，如果在三角形内，
+                 *    则对该子像素做深度测试。如果通过深度测试，则该子像素的颜色=0.25 * 当前着色后的颜色;
+                 *    否则，该子像素的值保持不变。
+                 * 3. 遍历结束后，当前像素的颜色则为所有子像素颜色的累加和
+                 */
+                int count = info->childSampleLayer;
+
+                if (count > 1) {
+                    float childRate = 1.0f / ((float)(count * count));
+
+                    SR_Color finalColor;
+
+                    for (int m = 0; m < count; m++) {
+                        for (int n = 0; n < count; n++) {
+                            SR_Vec2f childPos = info->getChildPos(pixelPos, n, m);
+
+                            // 通过重心坐标插值计算子像素深度的精确值
+                            tx = childPos.x;
+                            ty = childPos.y;
+
+                            alpha = ((b.y - c.y) * tx + (c.x - b.x) * ty + b.x * c.y - c.x * b.y) / fa;
+                            beta = ((c.y - a.y) * tx + (a.x - c.x) * ty + c.x * a.y - a.x * c.y) / fb;
+                            gama = ((a.y - b.y) * tx + (b.x - a.x) * ty + a.x * b.y - b.x * a.y) / fc;
+
+                            z = 1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
+
+                            // 深度坐标插值
+                            float dp = a.z * alpha + b.z * beta + c.z * gama;
+                            dp *= z;
+
+                            // 当前子像素若未被赋值则直接赋值当前像素点像素，避免出现黑线
+                            if (!info->isChildBeSet(pixelPos, n, m)) {
+                                info->setChildColor(pixelPos, n, m, pixelColor);
+                            }
+
+                            // 依次判断子像素是否在三角形内
+                            if (insideTriangle(
+                                SR_Vec2f(a.x, a.y),
+                                SR_Vec2f(b.x, b.y),
+                                SR_Vec2f(c.x, c.y),
+                                childPos)) {
+                                if (info->childZbufferTest(pixelPos, n, m, dp)) {
+                                    finalColor = finalColor + childRate * pixelColor;
+                                    info->setChildColor(pixelPos, n, m, pixelColor);
+                                }
+                            } else {
+                                // 如果本像素未被赋值，则直接取当前像素的颜色赋值
+                                finalColor = finalColor + childRate * info->getChildColor(pixelPos, n, m);
+                            }
+                        }
                     }
 
-                    pixelColor = pixelColor;
-                    SR_Vec2f pixelPos(j, i);
+                    finalColor.clamp();
+                    pixelColor = finalColor;
+                }
 
-                    // 深度测试
-                    if (zbufferTest(pixelPos, fragCoord.z)) {
-                        // 光栅化
-                        drawPixel(pixelPos, pixelColor);
-                    }
+                // 深度测试
+                if (zbufferTest(pixelPos, fragCoord.z)) {
+                    // 光栅化
+                    drawPixel(pixelPos, pixelColor);
                 }
             }
         }
@@ -470,24 +570,36 @@ void SR_Window::rasterizeTriangle(
 
 bool SR_Window::zbufferTest(const SR_Vec2f &pos, float depth)
 {
+    if (!info) {
+        return false;
+    }
+
+    int w = info->bufferWidth;
+    int h = info->bufferHeight;
+
     int x = pos.x;
     int y = pos.y;
     float *zbuf = info->zBuffer;
 
-    if (x > winWidth - 1 || x < 0) {
+    if (x > w - 1 || x < 0) {
         return false;
     }
 
-    if (y > winHeight - 1 || y < 0) {
+    if (y > h - 1 || y < 0) {
         return false;
     }
 
-    y = winHeight - 1 - y;
+    y = h - 1 - y;
 
-    if (depth >= zbuf[y * winWidth + x]) {
-        zbuf[y * winWidth + x] = depth;
+    if (depth >= zbuf[y * w + x]) {
+        zbuf[y * w + x] = depth;
         return true;
     }
+    return false;
+}
+
+bool SR_Window::zbufferChildTest(const SR_Vec2f &pos, float depth)
+{
     return false;
 }
 
@@ -537,25 +649,13 @@ void SR_Window::render()
             }
         }
 
-        int count = winWidth * winHeight;
-
-        // 清屏
-        Uint32 *buffer = info->surfaceBuffer;
-        float *zbuffer = info->zBuffer;
-
-        for (int i = 0; i < count; i++) {
-            buffer[i] = 0x00000000;
-        }
-
-        for (int i = 0; i < count; i++) {
-            zbuffer[i] = -FLT_MAX;
-        }
+        info->clearBuffer(0, -FLT_MAX);
 
         if (this->update) {
             this->update(*this);
         }
 
-        SDL_UpdateTexture(texture, nullptr, info->surfaceBuffer, winWidth * sizeof(Uint32));
+        SDL_UpdateTexture(texture, nullptr, info->surfaceBuffer, info->bufferWidth * sizeof(Uint32));
         SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 
         SDL_RenderPresent(renderer);
@@ -580,12 +680,374 @@ void SR_Window::clearWindow()
 
 int SR_Window::getWidth() const
 {
-    return winWidth;
+    if (info) {
+        return info->bufferWidth;
+    }
+    return 0;
 }
 
 int SR_Window::getHeight() const
 {
-    return winHeight;
+    if (info) {
+        return info->bufferHeight;
+    }
+    return 0;
 }
+
+//-----------------------------------------------------------------------------
+
+SR_WinCtx::SR_WinCtx()
+{
+    window = nullptr;
+    texture = nullptr;
+    renderer = nullptr;
+
+    surfaceBuffer = nullptr;
+    zBuffer = nullptr;
+    bufferWidth = 0;
+    bufferHeight = 0;
+    zBufferChild = nullptr;
+    surfaceChild = nullptr;
+    childSampleLayer = 0;
+}
+
+SR_WinCtx::~SR_WinCtx()
+{
+
+}
+
+void SR_WinCtx::createBuffer(int width, int height, int sampleLayer)
+{
+    switch (sampleLayer) {
+        case 2:
+        case 4:
+        case 8:
+            childSampleLayer = sampleLayer;
+            break;
+        default:
+            childSampleLayer = 1;
+            break;
+    }
+
+    bufferWidth = width;
+    bufferHeight = height;
+
+    int bufferSize = width * height;
+
+    // 最后真正用于渲染的的帧缓冲和深度缓冲区
+    surfaceBuffer = new Uint32[bufferSize];
+    zBuffer = new float[bufferSize];
+
+    for (int i = 0; i < bufferSize; i++) {
+        surfaceBuffer[i] = 0x00000000;
+        zBuffer[i] = -FLT_MAX;
+    }
+
+    if (childSampleLayer > 1) {
+        int count = bufferSize * childSampleLayer * childSampleLayer;
+
+        surfaceChild = new Uint32[count];
+        zBufferChild = new float[count];
+
+        for (int i = 0; i < count; i++) {
+            surfaceChild[i] = 0x00000000;
+            zBufferChild[i] = -FLT_MAX;
+        }
+    }
+}
+
+void SR_WinCtx::destroyBuffer()
+{
+    if (zBufferChild) {
+        delete[] zBufferChild;
+    }
+
+    if (surfaceChild) {
+        delete[] surfaceChild;
+    }
+
+    if (surfaceBuffer) {
+        delete[] surfaceBuffer;
+    }
+    
+    if (zBuffer) {
+        delete[] zBuffer;
+    }
+
+    childSampleLayer = 0;
+    bufferWidth = 0;
+    bufferHeight = 0;
+    surfaceBuffer = nullptr;
+    zBuffer = nullptr;
+}
+
+void SR_WinCtx::clearBuffer(Uint32 color, float dept)
+{
+    if (!surfaceBuffer || !zBuffer) {
+        return;
+    }
+    
+    if (!zBufferChild || !surfaceChild) {
+        return;
+    }
+
+    int bufferSize = bufferWidth * bufferHeight;
+    
+    for (int i = 0; i < bufferSize; i++) {
+        surfaceBuffer[i] = color;
+        zBuffer[i] = dept;
+    }
+
+    if (childSampleLayer > 1) {
+        int count = bufferSize * childSampleLayer * childSampleLayer;
+
+        for (int i = 0; i < count; i++) {
+            surfaceChild[i] = color;
+            zBufferChild[i] = dept;
+        }
+    }
+}
+
+bool SR_WinCtx::isChildBeSet(const SR_Vec2f &parent, int x, int y)
+{
+    int px = parent.x;
+    int py = parent.y;
+
+    int w = bufferWidth;
+    int h = bufferHeight;
+
+    if (px > w - 1 || px < 0) {
+        return false;
+    }
+
+    if (py > h - 1 || py < 0) {
+        return false;
+    }
+
+    if (x > childSampleLayer - 1 || x < 0 ) {
+        return false;
+    }
+
+    if (y > childSampleLayer - 1 || y < 0 ) {
+        return false;
+    }
+    
+    w *= childSampleLayer;
+    h *= childSampleLayer;
+
+    int cx = px * childSampleLayer;
+    int cy = py * childSampleLayer;
+
+    cy = h - 1 - cy;
+
+    Uint32 childColor = surfaceChild[(cy - y) * w + (cx + x)];
+    childColor &= 0x00FFFFFF;
+
+    return childColor > 0;
+}
+
+// 获取 parent 点像素下 (x, y) 点子像素的颜色值
+SR_Color SR_WinCtx::getChildColor(const SR_Vec2f &parent, int x, int y)
+{
+    int px = parent.x;
+    int py = parent.y;
+
+    int w = bufferWidth;
+    int h = bufferHeight;
+
+    if (px > w - 1 || px < 0) {
+        return SR_Color();
+    }
+
+    if (py > h - 1 || py < 0) {
+        return SR_Color();
+    }
+
+    if (x > childSampleLayer - 1 || x < 0 ) {
+        return SR_Color();
+    }
+
+    if (y > childSampleLayer - 1 || y < 0 ) {
+        return SR_Color();
+    }
+    
+    w *= childSampleLayer;
+    h *= childSampleLayer;
+
+    int cx = px * childSampleLayer;
+    int cy = py * childSampleLayer;
+
+    cy = h - 1 - cy;
+
+    Uint32 childColor = surfaceChild[(cy - y) * w + (cx + x)];
+    return SR_Color::fromUintRGB(childColor);
+}
+
+// 获取子像素点在父像素 parent 点下的浮点坐标
+SR_Vec2f SR_WinCtx::getChildPos(const SR_Vec2f &parent, int x, int y)
+{
+    if (x > childSampleLayer - 1 || x < 0 ) {
+        return parent;
+    }
+
+    if (y > childSampleLayer - 1 || y < 0 ) {
+        return parent;
+    }
+
+    if (childSampleLayer <= 1) {
+        return parent;
+    }
+
+    SR_Vec2f pos = parent;
+
+    x += (-childSampleLayer / 2);
+    y += (-childSampleLayer / 2);
+
+    float childRate = 1.0f / ((float)childSampleLayer);
+    pos.x += (x * childRate);
+    pos.y += (y * childRate);
+
+    return pos;
+}
+
+// 设置 parent 点像素下 (x, y) 的子像素颜色值
+void SR_WinCtx::setChildColor(const SR_Vec2f &parent, int x, int y, const SR_Color &color)
+{
+    int px = parent.x;
+    int py = parent.y;
+
+    int w = bufferWidth;
+    int h = bufferHeight;
+
+    if (px > w - 1 || px < 0) {
+        return;
+    }
+
+    if (py > h - 1 || py < 0) {
+        return;
+    }
+
+    if (x > childSampleLayer - 1 || x < 0 ) {
+        return;
+    }
+
+    if (y > childSampleLayer - 1 || y < 0 ) {
+        return;
+    }
+    
+    w *= childSampleLayer;
+    h *= childSampleLayer;
+
+    int cx = px * childSampleLayer;
+    int cy = py * childSampleLayer;
+
+    cy = h - 1 - cy;
+    surfaceChild[(cy - y) * w + (cx + x)] = color.toUintRGB();
+}
+
+// 对子像素做深度测试
+bool SR_WinCtx::childZbufferTest(const SR_Vec2f &parent, int x, int y, float depth)
+{
+    int px = parent.x;
+    int py = parent.y;
+
+    int w = bufferWidth;
+    int h = bufferHeight;
+
+    if (px > w - 1 || px < 0) {
+        return false;
+    }
+
+    if (py > h - 1 || py < 0) {
+        return false;
+    }
+
+    if (x > childSampleLayer - 1 || x < 0 ) {
+        return false;
+    }
+
+    if (y > childSampleLayer - 1 || y < 0 ) {
+        return false;
+    }
+
+    w *= childSampleLayer;
+    h *= childSampleLayer;
+
+    int cx = px * childSampleLayer;
+    int cy = py * childSampleLayer;
+
+    cy = h - 1 - cy;
+    if (depth >= zBufferChild[(cy - y) * w + (cx + x)]) {
+        zBufferChild[(cy - y) * w + (cx + x)] = depth;
+        return true;
+    }
+    return false;
+}
+
+#if 0
+void SR_WinCtx::setSurfaceColor(Uint32 color, int x, int y)
+{
+    if (!surfaceBuffer) {
+        surfaceBuffer[y * bufferWidth + x] = color;
+    }
+}
+
+void SR_WinCtx::setChildSurfaceColor(Uint32 color, int x, int y)
+{
+    if (!surfaceChild) {
+        int width = bufferWidth * childSampleLayer;
+        surfaceChild[y * width + x] = color;
+    }
+}
+
+void SR_WinCtx::setDepth(float depth, int x, int y)
+{
+    if (!zBuffer) {
+        zBuffer[y * bufferWidth + x] = depth;
+    }
+}
+
+void SR_WinCtx::setChildDepth(float depth, int x, int y)
+{
+    if (!zBufferChild) {
+        int width = bufferWidth * childSampleLayer;
+        zBufferChild[y * width + x] = depth;
+    }
+}
+
+Uint32 SR_WinCtx::getSurfaceColor(int x, int y) const
+{
+    if (!surfaceBuffer) {
+        return surfaceBuffer[y * bufferWidth + x];
+    }
+    return 0;
+}
+
+Uint32 SR_WinCtx::getChildSurfaceColor(int x, int y) const
+{
+    if (!surfaceChild) {
+        int width = bufferWidth * childSampleLayer;
+        return surfaceChild[y * width + x];
+    }
+    return 0;
+}
+
+float SR_WinCtx::getDepth(int x, int y) const
+{
+    if (!zBuffer) {
+        return zBuffer[y * bufferWidth + x];
+    }
+    return -FLT_MAX;
+}
+
+float SR_WinCtx::setChildDepth(int x, int y) const
+{
+    if (!zBufferChild) {
+        int width = bufferWidth * childSampleLayer;
+        return zBufferChild[y * width + x];
+    }
+    return -FLT_MAX;
+}
+#endif
 
 //-----------------------------------------------------------------------------
