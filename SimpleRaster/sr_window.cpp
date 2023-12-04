@@ -38,21 +38,8 @@ public:
     // 对子像素做深度测试
     bool childZbufferTest(const SR_Vec2f &parent, int x, int y, float depth);
 
-    // // 设置颜色
-    // void setSurfaceColor(Uint32 color, int x, int y);
-    // void setChildSurfaceColor(Uint32 color, int x, int y);
-
-    // // 设置深度
-    // void setDepth(float depth, int x, int y);
-    // void setChildDepth(float depth, int x, int y);
-
-    // // 获取颜色
-    // Uint32 getSurfaceColor(int x, int y) const;
-    // Uint32 getChildSurfaceColor(int x, int y) const;
-
-    // // 获取深度
-    // float getDepth(int x, int y) const;
-    // float setChildDepth(int x, int y) const;
+    // 获取像素点颜色
+    SR_Color getPixelColor(const SR_Vec2f &parent);
 
 public:
     SDL_Window *window;
@@ -87,6 +74,8 @@ SR_Window::SR_Window(int width, int height)
     info->createBuffer(width, height);
     this->start = nullptr;
     this->update = nullptr;
+
+    currentAA = MSAA;
 }
 
 SR_Window::~SR_Window()
@@ -390,28 +379,13 @@ void SR_Window::rasterizeTriangle(
     SR_Color (*fragmentShader)(const SR_Fragment &)
 )
 {
-    if (!info) {
-        return;
-    }
-
-    int w = info->bufferWidth;
-    int h = info->bufferHeight;
-
-    const SR_Vec4f &a = va.vertex;
-    const SR_Vec4f &b = vb.vertex;
-    const SR_Vec4f &c = vc.vertex;
-
-    float xmin = a.x;
-    float xmax = a.x;
-    float ymin = a.y;
-    float ymax = a.y;
+    float xmin = va.vertex.x;
+    float xmax = va.vertex.x;
+    float ymin = va.vertex.y;
+    float ymax = va.vertex.y;
 
     float i = 0;
     float j = 0;
-
-    float fa = 0.0f;
-    float fb = 0.0f;
-    float fc = 0.0f;
 
     /*
      * 1.确定三角形的包围盒 xmin xmax ymin ymax；
@@ -426,143 +400,377 @@ void SR_Window::rasterizeTriangle(
      * b = f20(x, y) / f20(x1, y1)
      * c = f01(x, y) / f01(x2, y2)
      */
-    xmin = xmin < b.x ? xmin : b.x;
-    xmin = xmin < c.x ? xmin : c.x;
-    xmax = xmax > b.x ? xmax : b.x;
-    xmax = xmax > c.x ? xmax : c.x;
+    xmin = xmin < vb.vertex.x ? xmin : vb.vertex.x;
+    xmin = xmin < vc.vertex.x ? xmin : vc.vertex.x;
+    xmax = xmax > vb.vertex.x ? xmax : vb.vertex.x;
+    xmax = xmax > vc.vertex.x ? xmax : vc.vertex.x;
 
-    ymin = ymin < b.y ? ymin : b.y;
-    ymin = ymin < c.y ? ymin : c.y;
-    ymax = ymax > b.y ? ymax : b.y;
-    ymax = ymax > c.y ? ymax : c.y;
+    ymin = ymin < vb.vertex.y ? ymin : vb.vertex.y;
+    ymin = ymin < vc.vertex.y ? ymin : vc.vertex.y;
+    ymax = ymax > vb.vertex.y ? ymax : vb.vertex.y;
+    ymax = ymax > vc.vertex.y ? ymax : vc.vertex.y;
 
-    fa = (b.y - c.y) * a.x + (c.x - b.x) * a.y + b.x * c.y - c.x * b.y;
-    fb = (c.y - a.y) * b.x + (a.x - c.x) * b.y + c.x * a.y - a.x * c.y;
-    fc = (a.y - b.y) * c.x + (b.x - a.x) * c.y + a.x * b.y - b.x * a.y;
+    // 三种三角形抗锯齿方案
+    if (currentAA == MSAA) {
+        for (i = ymin; i <= ymax + 0.5f; i += 1.0f) {
+            for (j = xmin; j <= xmax + 0.5f; j += 1.0f) {
+                msaaRasterizeTriangle(SR_Vec2f(j, i), list, va, vb, vc, fragmentShader);
+            }
+        }
+    } else if (currentAA == SSAA) {
+        for (i = ymin; i <= ymax + 0.5f; i += 1.0f) {
+            for (j = xmin; j <= xmax + 0.5f; j += 1.0f) {
+                ssaaRasterizeTriangle(SR_Vec2f(j, i), list, va, vb, vc, fragmentShader);
+            }
+        }
+    } else {
+        for (i = ymin; i <= ymax + 0.5f; i += 1.0f) {
+            for (j = xmin; j <= xmax + 0.5f; j += 1.0f) {
+                noaaRasterizeTriangle(SR_Vec2f(j, i), list, va, vb, vc, fragmentShader);
+            }
+        }
+    }
+}
 
-    for (i = ymin; i <= ymax; i++) {
-        for (j = xmin; j <= xmax; j++) {
-            float tx = j;
-            float ty = i;
+void SR_Window::ssaaRasterizeTriangle(
+    const SR_Vec2f &curPos,
+    const SR_TriangleIndexList &list,
+    const SR_VertexInfo &va,
+    const SR_VertexInfo &vb,
+    const SR_VertexInfo &vc,
+    SR_Color (*fragmentShader)(const SR_Fragment &))
+{
+    if (!info) {
+        return;
+    }
 
-            float alpha = ((b.y - c.y) * tx + (c.x - b.x) * ty + b.x * c.y - c.x * b.y) / fa;
-            float beta = ((c.y - a.y) * tx + (a.x - c.x) * ty + c.x * a.y - a.x * c.y) / fb;
-            float gama = ((a.y - b.y) * tx + (b.x - a.x) * ty + a.x * b.y - b.x * a.y) / fc;
+    int w = info->bufferWidth;
+    int h = info->bufferHeight;
 
-            if ((alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) &&
-                 alpha <= 1.0f && beta <= 1.0f && gama <= 1.0f) {
-                SR_Fragment frag;
+    const SR_Vec4f &a = va.vertex;
+    const SR_Vec4f &b = vb.vertex;
+    const SR_Vec4f &c = vc.vertex;
 
-                // 透视矫正参数
-                float z = 
-                    1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
+    float fa = (b.y - c.y) * a.x + (c.x - b.x) * a.y + b.x * c.y - c.x * b.y;
+    float fb = (c.y - a.y) * b.x + (a.x - c.x) * b.y + c.x * a.y - a.x * c.y;
+    float fc = (a.y - b.y) * c.x + (b.x - a.x) * c.y + a.x * b.y - b.x * a.y;
 
-                // 颜色插值
-                frag.interpolateFragColor(alpha, beta, gama, z, va.color, vb.color, vc.color);
+    int count = info->childSampleLayer;
 
-                // 片元坐标插值
-                SR_Vec4f fragCoord;
-                fragCoord = alpha * a + beta * b + gama * c;
-                fragCoord = fragCoord * z;
+    /*
+     * SSAA 超采样实现逻辑
+     * 
+     * 1. 遍历 j、i 像素点当前所有子像素，判定子像素是否在三角形内，如果在三角形内，则对该子
+     *    像素进行着色和深度测试，如果通过深度测试，则累计子像素深度，每一块子像素深度为
+     *    整个像素深度的 1 / (count * count)，count 为抗锯齿级数，2、4 或者 8；
+     *    否则，该子像素的值保持不变。
+     * 3. 遍历结束后，当前像素的颜色则为所有子像素颜色的累加和（如果有其中一个子像素通过深度测试的话）。
+     */
+    float childRate = 1.0f / ((float)(count * count));
+    const SR_Vec2f &parent = curPos;
 
-                frag.setFragCoord(
-                    SR_Vec3f(
-                        fragCoord.x / fragCoord.w,
-                        fragCoord.y / fragCoord.w,
-                        fragCoord.z / fragCoord.w
-                    )
-                );
+    SR_Color finalColor;
+    float depth = -FLT_MAX;
 
-                // 像素最终颜色
-                SR_Color pixelColor;
+    for (int m = 0; m < count; m++) {
+        for (int n = 0; n < count; n++) {
+            SR_Vec2f childPos = info->getChildPos(parent, n, m);
+            float tx = childPos.x;
+            float ty = childPos.y;
 
-                if (fragmentShader) {
-                    // 片元世界空间坐标插值
-                    frag.interpolateFragGlobal(alpha, beta, gama, z, va.global, vb.global, vc.global);
+            if (insideTriangle(
+                SR_Vec2f(a.x, a.y),
+                SR_Vec2f(b.x, b.y),
+                SR_Vec2f(c.x, c.y),
+                childPos)) {
+                float alpha = ((b.y - c.y) * tx + (c.x - b.x) * ty + b.x * c.y - c.x * b.y) / fa;
+                float beta = ((c.y - a.y) * tx + (a.x - c.x) * ty + c.x * a.y - a.x * c.y) / fb;
+                float gama = ((a.y - b.y) * tx + (b.x - a.x) * ty + a.x * b.y - b.x * a.y) / fc;
 
-                    // 顶点法线插值
-                    frag.interpolateNormal(alpha, beta, gama, z, va.normal, vb.normal, vc.normal);
+                if ((alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) &&
+                    (alpha <= 1.0f && beta <= 1.0f && gama <= 1.0f)) {
+                    SR_Fragment frag;
 
-                    // 设置面法线
-                    frag.setFragSurfaceNormal(list.normal);
+                    // 透视矫正参数
+                    float z = 
+                        1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
 
-                    // uv 坐标插值
-                    frag.interpolateUV(alpha, beta, gama, z, va.uv, vb.uv, vc.uv);
+                    // 颜色插值
+                    frag.interpolateFragColor(alpha, beta, gama, z, va.color, vb.color, vc.color);
 
-                    // 设置分辨率
-                    frag.setResolution((float)w, (float)h);
-                    pixelColor = fragmentShader(frag);
-                } else {
-                    pixelColor = frag.getFragColor();
-                }
+                    // 片元坐标插值
+                    SR_Vec4f fragCoord;
+                    fragCoord = alpha * a + beta * b + gama * c;
+                    fragCoord = fragCoord * z;
 
-                pixelColor = pixelColor;
-                SR_Vec2f pixelPos(tx, ty);
+                    frag.setFragCoord(
+                        SR_Vec3f(
+                            fragCoord.x / fragCoord.w,
+                            fragCoord.y / fragCoord.w,
+                            fragCoord.z / fragCoord.w
+                        )
+                    );
 
-                /*
-                 * 以 2x2 拆分采样法为例
-                 * 
-                 * 1. 遍历 j、i 像素点当前所有子像素，判定子像素中心点是否在三角形内，如果在三角形内，
-                 *    则对该子像素做深度测试。如果通过深度测试，则该子像素的颜色=0.25 * 当前着色后的颜色;
-                 *    否则，该子像素的值保持不变。
-                 * 3. 遍历结束后，当前像素的颜色则为所有子像素颜色的累加和
-                 */
-                int count = info->childSampleLayer;
+                    // 像素最终颜色
+                    SR_Color pixelColor;
 
-                if (count > 1) {
-                    float childRate = 1.0f / ((float)(count * count));
+                    if (fragmentShader) {
+                        // 片元世界空间坐标插值
+                        frag.interpolateFragGlobal(alpha, beta, gama, z, va.global, vb.global, vc.global);
 
-                    SR_Color finalColor;
+                        // 顶点法线插值
+                        frag.interpolateNormal(alpha, beta, gama, z, va.normal, vb.normal, vc.normal);
 
-                    for (int m = 0; m < count; m++) {
-                        for (int n = 0; n < count; n++) {
-                            SR_Vec2f childPos = info->getChildPos(pixelPos, n, m);
+                        // 设置面法线
+                        frag.setFragSurfaceNormal(list.normal);
 
-                            // 通过重心坐标插值计算子像素深度的精确值
-                            tx = childPos.x;
-                            ty = childPos.y;
+                        // uv 坐标插值
+                        frag.interpolateUV(alpha, beta, gama, z, va.uv, vb.uv, vc.uv);
 
-                            alpha = ((b.y - c.y) * tx + (c.x - b.x) * ty + b.x * c.y - c.x * b.y) / fa;
-                            beta = ((c.y - a.y) * tx + (a.x - c.x) * ty + c.x * a.y - a.x * c.y) / fb;
-                            gama = ((a.y - b.y) * tx + (b.x - a.x) * ty + a.x * b.y - b.x * a.y) / fc;
-
-                            z = 1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
-
-                            // 深度坐标插值
-                            float dp = a.z * alpha + b.z * beta + c.z * gama;
-                            dp *= z;
-
-                            // 当前子像素若未被赋值则直接赋值当前像素点像素，避免出现黑线
-                            if (!info->isChildBeSet(pixelPos, n, m)) {
-                                info->setChildColor(pixelPos, n, m, pixelColor);
-                            }
-
-                            // 依次判断子像素是否在三角形内
-                            if (insideTriangle(
-                                SR_Vec2f(a.x, a.y),
-                                SR_Vec2f(b.x, b.y),
-                                SR_Vec2f(c.x, c.y),
-                                childPos)) {
-                                if (info->childZbufferTest(pixelPos, n, m, dp)) {
-                                    finalColor = finalColor + childRate * pixelColor;
-                                    info->setChildColor(pixelPos, n, m, pixelColor);
-                                }
-                            } else {
-                                // 如果本像素未被赋值，则直接取当前像素的颜色赋值
-                                finalColor = finalColor + childRate * info->getChildColor(pixelPos, n, m);
-                            }
-                        }
+                        // 设置分辨率
+                        frag.setResolution((float)w, (float)h);
+                        pixelColor = fragmentShader(frag);
+                    } else {
+                        pixelColor = frag.getFragColor();
                     }
 
-                    finalColor.clamp();
-                    pixelColor = finalColor;
+                    // 深度测试
+                    if (info->childZbufferTest(parent, n, m, fragCoord.z)) {
+                        info->setChildColor(parent, n, m, pixelColor);
+                        depth += (childRate * fragCoord.z);
+                    }
                 }
+            }
 
-                // 深度测试
-                if (zbufferTest(pixelPos, fragCoord.z)) {
-                    // 光栅化
-                    drawPixel(pixelPos, pixelColor);
+            finalColor = finalColor + childRate * info->getChildColor(parent, n, m);
+        }
+    }
+
+    if (zbufferTest(parent, depth)) {
+        drawPixel(parent, finalColor);
+    }
+}
+
+void SR_Window::msaaRasterizeTriangle(
+    const SR_Vec2f &curPos,
+    const SR_TriangleIndexList &list,
+    const SR_VertexInfo &va,
+    const SR_VertexInfo &vb,
+    const SR_VertexInfo &vc,
+    SR_Color (*fragmentShader)(const SR_Fragment &))
+{
+    if (!info) {
+        return;
+    }
+
+    int w = info->bufferWidth;
+    int h = info->bufferHeight;
+
+    const SR_Vec4f &a = va.vertex;
+    const SR_Vec4f &b = vb.vertex;
+    const SR_Vec4f &c = vc.vertex;
+
+    float fa = (b.y - c.y) * a.x + (c.x - b.x) * a.y + b.x * c.y - c.x * b.y;
+    float fb = (c.y - a.y) * b.x + (a.x - c.x) * b.y + c.x * a.y - a.x * c.y;
+    float fc = (a.y - b.y) * c.x + (b.x - a.x) * c.y + a.x * b.y - b.x * a.y;
+
+    SR_Vec2f parent = curPos;
+    SR_Color pixelColor = info->getPixelColor(parent);
+
+    int count = info->childSampleLayer;
+
+    /*
+     * MSAA 采样实现逻辑
+     * 
+     * 1. 将当前像素拆分成子像素，像 SSAA 一样遍历子像素；
+     * 2. 如果某一个子像素在三角形内，则先对该像素进行重心插值并着色，并记录其颜色作为该像素点的颜色；
+     * 3. 遍历 j、i 像素点当前所有子像素，判定子像素是否在三角形内，如果在三角形内，则对当前子像素进行深度
+     *    测试，如果通过深度测试。则用子像素来累计当前像素颜色和深度，每一个子像素颜色或者深度为整个像素颜色或者深度
+     *    的 1 / (count * count)，count 为抗锯齿级数，2、4 或者 8；
+     * 4. 遍历结束后，当前像素的颜色则为所有子像素颜色的累加和（如果有其中一个子像素通过深度测试的话）；
+     * 5. 和 SSAA 不同的是 MSAA 仅做一次着色操作。
+     */
+    float childRate = 1.0f / ((float)(count * count));
+
+    float depth = -FLT_MAX;
+    bool isShader = false;
+
+    SR_Color finalColor;
+    SR_Color shaderColor;
+
+    for (int m = 0; m < count; m++) {
+        for (int n = 0; n < count; n++) {
+            SR_Vec2f childPos = info->getChildPos(parent, n, m);
+            float tx = childPos.x;
+            float ty = childPos.y;
+
+            if (insideTriangle(
+                SR_Vec2f(a.x, a.y),
+                SR_Vec2f(b.x, b.y),
+                SR_Vec2f(c.x, c.y),
+                childPos)) {
+                float alpha = ((b.y - c.y) * tx + (c.x - b.x) * ty + b.x * c.y - c.x * b.y) / fa;
+                float beta = ((c.y - a.y) * tx + (a.x - c.x) * ty + c.x * a.y - a.x * c.y) / fb;
+                float gama = ((a.y - b.y) * tx + (b.x - a.x) * ty + a.x * b.y - b.x * a.y) / fc;
+
+                if ((alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) &&
+                    (alpha <= 1.0f && beta <= 1.0f && gama <= 1.0f)) {
+                    SR_Fragment frag;
+
+                    // 透视矫正参数
+                    float z = 
+                        1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
+
+                    // 颜色插值
+                    frag.interpolateFragColor(alpha, beta, gama, z, va.color, vb.color, vc.color);
+
+                    // 片元坐标插值
+                    SR_Vec4f fragCoord;
+                    fragCoord = alpha * a + beta * b + gama * c;
+                    fragCoord = fragCoord * z;
+
+                    frag.setFragCoord(
+                        SR_Vec3f(
+                            fragCoord.x / fragCoord.w,
+                            fragCoord.y / fragCoord.w,
+                            fragCoord.z / fragCoord.w
+                        )
+                    );
+
+                    // 像素最终颜色
+                    SR_Color pixelColor = info->getChildColor(parent, n, m);
+
+                    if (!isShader) {
+                        if (fragmentShader) {
+                            // 片元世界空间坐标插值
+                            frag.interpolateFragGlobal(alpha, beta, gama, z, va.global, vb.global, vc.global);
+
+                            // 顶点法线插值
+                            frag.interpolateNormal(alpha, beta, gama, z, va.normal, vb.normal, vc.normal);
+
+                            // 设置面法线
+                            frag.setFragSurfaceNormal(list.normal);
+
+                            // uv 坐标插值
+                            frag.interpolateUV(alpha, beta, gama, z, va.uv, vb.uv, vc.uv);
+
+                            // 设置分辨率
+                            frag.setResolution((float)w, (float)h);
+                            shaderColor = fragmentShader(frag);
+                        } else {
+                            shaderColor = frag.getFragColor();
+                        }
+
+                        isShader = true;
+                    }
+
+                    if (isShader) {
+                        pixelColor = shaderColor;
+                    }
+
+                    // 深度测试
+                    if (info->childZbufferTest(parent, n, m, fragCoord.z)) {
+                        info->setChildColor(parent, n, m, pixelColor);
+                        depth += (childRate * fragCoord.z);
+                    }
                 }
+            }
+
+            finalColor = finalColor + childRate * info->getChildColor(parent, n, m);
+        }
+    }
+
+    if (zbufferTest(parent, depth)) {
+        drawPixel(parent, finalColor);
+    }
+}
+
+void SR_Window::noaaRasterizeTriangle(
+    const SR_Vec2f &curPos,
+    const SR_TriangleIndexList &list,
+    const SR_VertexInfo &va,
+    const SR_VertexInfo &vb,
+    const SR_VertexInfo &vc,
+    SR_Color (*fragmentShader)(const SR_Fragment &))
+{
+    if (!info) {
+        return;
+    }
+
+    int w = info->bufferWidth;
+    int h = info->bufferHeight;
+
+    const SR_Vec4f &a = va.vertex;
+    const SR_Vec4f &b = vb.vertex;
+    const SR_Vec4f &c = vc.vertex;
+
+    float fa = (b.y - c.y) * a.x + (c.x - b.x) * a.y + b.x * c.y - c.x * b.y;
+    float fb = (c.y - a.y) * b.x + (a.x - c.x) * b.y + c.x * a.y - a.x * c.y;
+    float fc = (a.y - b.y) * c.x + (b.x - a.x) * c.y + a.x * b.y - b.x * a.y;
+
+    const SR_Vec2f &parent = curPos;
+
+    if (insideTriangle(
+        SR_Vec2f(a.x, a.y),
+        SR_Vec2f(b.x, b.y),
+        SR_Vec2f(c.x, c.y),
+        parent)) {
+        float tx = parent.x;
+        float ty = parent.y;
+
+        float alpha = ((b.y - c.y) * tx + (c.x - b.x) * ty + b.x * c.y - c.x * b.y) / fa;
+        float beta = ((c.y - a.y) * tx + (a.x - c.x) * ty + c.x * a.y - a.x * c.y) / fb;
+        float gama = ((a.y - b.y) * tx + (b.x - a.x) * ty + a.x * b.y - b.x * a.y) / fc;
+
+        if ((alpha >= 0.0f && beta >= 0.0f && gama >= 0.0f) &&
+            (alpha <= 1.0f && beta <= 1.0f && gama <= 1.0f)) {
+            SR_Fragment frag;
+
+            // 透视矫正参数
+            float z = 
+                1.0f / (alpha / va.vertex.w + beta / vb.vertex.w + gama / vc.vertex.w);
+
+            // 颜色插值
+            frag.interpolateFragColor(alpha, beta, gama, z, va.color, vb.color, vc.color);
+
+            // 片元坐标插值
+            SR_Vec4f fragCoord;
+            fragCoord = alpha * a + beta * b + gama * c;
+            fragCoord = fragCoord * z;
+
+            frag.setFragCoord(
+                SR_Vec3f(
+                    fragCoord.x / fragCoord.w,
+                    fragCoord.y / fragCoord.w,
+                    fragCoord.z / fragCoord.w
+                )
+            );
+
+            // 像素最终颜色
+            SR_Color pixelColor;
+
+            if (fragmentShader) {
+                // 片元世界空间坐标插值
+                frag.interpolateFragGlobal(alpha, beta, gama, z, va.global, vb.global, vc.global);
+
+                // 顶点法线插值
+                frag.interpolateNormal(alpha, beta, gama, z, va.normal, vb.normal, vc.normal);
+
+                // 设置面法线
+                frag.setFragSurfaceNormal(list.normal);
+
+                // uv 坐标插值
+                frag.interpolateUV(alpha, beta, gama, z, va.uv, vb.uv, vc.uv);
+
+                // 设置分辨率
+                frag.setResolution((float)w, (float)h);
+                pixelColor = fragmentShader(frag);
+            } else {
+                pixelColor = frag.getFragColor();
+            }
+
+            if (zbufferTest(parent, fragCoord.z)) {
+                drawPixel(parent, pixelColor);
             }
         }
     }
@@ -984,70 +1192,29 @@ bool SR_WinCtx::childZbufferTest(const SR_Vec2f &parent, int x, int y, float dep
     return false;
 }
 
-#if 0
-void SR_WinCtx::setSurfaceColor(Uint32 color, int x, int y)
+SR_Color SR_WinCtx::getPixelColor(const SR_Vec2f &parent)
 {
-    if (!surfaceBuffer) {
-        surfaceBuffer[y * bufferWidth + x] = color;
-    }
-}
+    SR_Color color;
 
-void SR_WinCtx::setChildSurfaceColor(Uint32 color, int x, int y)
-{
-    if (!surfaceChild) {
-        int width = bufferWidth * childSampleLayer;
-        surfaceChild[y * width + x] = color;
-    }
-}
+    int w = bufferWidth;
+    int h = bufferHeight;
+    
+    int x = parent.x;
+    int y = parent.y;
 
-void SR_WinCtx::setDepth(float depth, int x, int y)
-{
-    if (!zBuffer) {
-        zBuffer[y * bufferWidth + x] = depth;
+    if (x > w - 1 || x < 0) {
+        return color;
     }
-}
 
-void SR_WinCtx::setChildDepth(float depth, int x, int y)
-{
-    if (!zBufferChild) {
-        int width = bufferWidth * childSampleLayer;
-        zBufferChild[y * width + x] = depth;
+    if (y > h - 1 || y < 0) {
+        return color;
     }
-}
 
-Uint32 SR_WinCtx::getSurfaceColor(int x, int y) const
-{
-    if (!surfaceBuffer) {
-        return surfaceBuffer[y * bufferWidth + x];
-    }
-    return 0;
-}
+    y = h - 1 - y;
 
-Uint32 SR_WinCtx::getChildSurfaceColor(int x, int y) const
-{
-    if (!surfaceChild) {
-        int width = bufferWidth * childSampleLayer;
-        return surfaceChild[y * width + x];
-    }
-    return 0;
+    // 点光栅化
+    color = SR_Color::fromUintRGB(surfaceBuffer[y * w + x]);
+    return color;
 }
-
-float SR_WinCtx::getDepth(int x, int y) const
-{
-    if (!zBuffer) {
-        return zBuffer[y * bufferWidth + x];
-    }
-    return -FLT_MAX;
-}
-
-float SR_WinCtx::setChildDepth(int x, int y) const
-{
-    if (!zBufferChild) {
-        int width = bufferWidth * childSampleLayer;
-        return zBufferChild[y * width + x];
-    }
-    return -FLT_MAX;
-}
-#endif
 
 //-----------------------------------------------------------------------------

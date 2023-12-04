@@ -34,11 +34,38 @@ public:
     // 通过三角形重心坐标对三角形进行插值
     void rasterizeTriangle(
         const SR_TriangleIndexList &list,
-        const SR_VertexInfo &a,
-        const SR_VertexInfo &b,
-        const SR_VertexInfo &c,
+        const SR_VertexInfo &va,
+        const SR_VertexInfo &vb,
+        const SR_VertexInfo &vc,
         SR_Color (*fragmentShader)(const SR_Fragment &)
     );
+
+    // SSAA 抗锯齿渲染三角形
+    void ssaaRasterizeTriangle(
+        const SR_Vec2f &curPos,
+        const SR_TriangleIndexList &list,
+        const SR_VertexInfo &va,
+        const SR_VertexInfo &vb,
+        const SR_VertexInfo &vc,
+        SR_Color (*fragmentShader)(const SR_Fragment &));
+
+    // MSAA 抗锯齿渲染三角形
+    void msaaRasterizeTriangle(
+        const SR_Vec2f &curPos,
+        const SR_TriangleIndexList &list,
+        const SR_VertexInfo &va,
+        const SR_VertexInfo &vb,
+        const SR_VertexInfo &vc,
+        SR_Color (*fragmentShader)(const SR_Fragment &));
+
+    // NOAA 抗锯齿渲染三角形
+    void noaaRasterizeTriangle(
+        const SR_Vec2f &curPos,
+        const SR_TriangleIndexList &list,
+        const SR_VertexInfo &va,
+        const SR_VertexInfo &vb,
+        const SR_VertexInfo &vc,
+        SR_Color (*fragmentShader)(const SR_Fragment &));
 
     // 深度测试，如果 depth 深度大于 pos 位置原有的深度则返回 true，否则返回 false
     bool zbufferTest(const SR_Vec2f &pos, float depth);
@@ -69,6 +96,13 @@ private:
 
     void (*start)(SR_Window &);
     void (*update)(SR_Window &);
+
+    // 当前抗锯齿方案
+    enum AntiAliasing {
+        NO_AA = 0,
+        MSAA = 1,
+        SSAA = 2
+    } currentAA;
 };
 
 //-----------------------------------------------------------------------------
