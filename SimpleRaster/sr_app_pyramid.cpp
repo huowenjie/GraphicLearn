@@ -43,8 +43,8 @@ static SR_Vec3f camPos = SR_Vec3f(0.0f, 0.0f, 2.0f);
 static SR_Vec3f targetPos = SR_Vec3f(0.0f, 0.0f, 0.0);
 
 // 初始旋转角度
-static float startRotate = (PI / 180.0f) * 45.0f;
-static float rotateSpeed = (PI / 180.0f);
+static float startRotate = (PI / 180.0f) * 44.5f;
+static float rotateSpeed = (PI / 360.0f);
 
 void start(SR_Window &window)
 {

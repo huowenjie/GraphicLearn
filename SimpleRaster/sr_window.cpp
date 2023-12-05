@@ -412,21 +412,21 @@ void SR_Window::rasterizeTriangle(
 
     // 三种三角形抗锯齿方案
     if (currentAA == MSAA) {
-        for (i = ymin; i <= ymax + 0.5f; i += 1.0f) {
-            for (j = xmin; j <= xmax + 0.5f; j += 1.0f) {
-                msaaRasterizeTriangle(SR_Vec2f(j, i), list, va, vb, vc, fragmentShader);
+        for (i = ymin - 0.5f; i < ymax + 1.0f; i += 1.0f) {
+            for (j = xmin - 0.5f; j < xmax + 1.0f; j += 1.0f) {
+                msaaRasterizeTriangle(SR_Vec2f(roundf(j), roundf(i)), list, va, vb, vc, fragmentShader);
             }
         }
     } else if (currentAA == SSAA) {
-        for (i = ymin; i <= ymax + 0.5f; i += 1.0f) {
-            for (j = xmin; j <= xmax + 0.5f; j += 1.0f) {
-                ssaaRasterizeTriangle(SR_Vec2f(j, i), list, va, vb, vc, fragmentShader);
+        for (i = ymin - 0.5f; i < ymax + 1.0f; i += 1.0f) {
+            for (j = xmin - 0.5f; j < xmax + 1.0f; j += 1.0f) {
+                ssaaRasterizeTriangle(SR_Vec2f(roundf(j), roundf(i)), list, va, vb, vc, fragmentShader);
             }
         }
     } else {
-        for (i = ymin; i <= ymax + 0.5f; i += 1.0f) {
-            for (j = xmin; j <= xmax + 0.5f; j += 1.0f) {
-                noaaRasterizeTriangle(SR_Vec2f(j, i), list, va, vb, vc, fragmentShader);
+        for (i = ymin - 0.5f; i < ymax + 1.0f; i += 1.0f) {
+            for (j = xmin - 0.5f; j < xmax + 1.0f; j += 1.0f) {
+                noaaRasterizeTriangle(SR_Vec2f(roundf(j), roundf(i)), list, va, vb, vc, fragmentShader);
             }
         }
     }
@@ -566,9 +566,9 @@ void SR_Window::msaaRasterizeTriangle(
     int w = info->bufferWidth;
     int h = info->bufferHeight;
 
-    const SR_Vec4f &a = va.vertex;
-    const SR_Vec4f &b = vb.vertex;
-    const SR_Vec4f &c = vc.vertex;
+    SR_Vec4f a = va.vertex;
+    SR_Vec4f b = vb.vertex;
+    SR_Vec4f c = vc.vertex;
 
     float fa = (b.y - c.y) * a.x + (c.x - b.x) * a.y + b.x * c.y - c.x * b.y;
     float fb = (c.y - a.y) * b.x + (a.x - c.x) * b.y + c.x * a.y - a.x * c.y;
