@@ -1,5 +1,5 @@
-#ifndef __SR_MEM_H__
-#define __SR_MEM_H__
+#ifndef __GR_MEM_H__
+#define __GR_MEM_H__
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -13,32 +13,32 @@ extern "C" {
 #endif /* __cplusplus */
 
 /* 内存追踪通用宏 */
-#ifdef SR_MEMORY_DEBUG
-    #define SR_MEM_START create_res()
-    #define SR_MEM_END clear_res()
+#ifdef GR_MEMORY_DEBUG
+    #define GR_MEM_START create_res()
+    #define GR_MEM_END clear_res()
 
-    #define SR_MALLOC(len) mem_dbg_malloc((len), __FUNCTION__, __FILE__, __LINE__)
-    #define SR_REALLOC(p, len) mem_dbg_realloc((p), (len), __FUNCTION__, __FILE__, __LINE__)
-    #define SR_FREE(p) mem_dbg_free(p)
+    #define GR_MALLOC(len) mem_dbg_malloc((len), __FUNCTION__, __FILE__, __LINE__)
+    #define GR_REALLOC(p, len) mem_dbg_realloc((p), (len), __FUNCTION__, __FILE__, __LINE__)
+    #define GR_FREE(p) mem_dbg_free(p)
 
-    #define SR_PRINT_MEM_INFO mem_dbg_print_info()
-    #define SR_PRINT_BLOCK_LIST(len) mem_dbg_print_block_list((len))
-    #define SR_PRINT_LEAK_INFO mem_dbg_print_leak_info()
+    #define GR_PRINT_MEM_INFO mem_dbg_print_info(0)
+    #define GR_PRINT_BLOCK_LIST(len) mem_dbg_print_block_list(0, (len))
+    #define GR_PRINT_LEAK_INFO mem_dbg_print_leak_info(0)
 #else
-    #define SR_MEM_START
-    #define SR_MEM_END
+    #define GR_MEM_START
+    #define GR_MEM_END
 
-    #define SR_MALLOC(len) malloc(len)
-    #define SR_REALLOC(p, len) realloc((p), (len))
-    #define SR_FREE(p) free(p)
+    #define GR_MALLOC(len) malloc(len)
+    #define GR_REALLOC(p, len) realloc((p), (len))
+    #define GR_FREE(p) free(p)
 
-    #define SR_PRINT_MEM_INFO
-    #define SR_PRINT_BLOCK_LIST
-    #define SR_PRINT_LEAK_INFO
+    #define GR_PRINT_MEM_INFO
+    #define GR_PRINT_BLOCK_LIST
+    #define GR_PRINT_LEAK_INFO
 #endif /* USE_MEMORY */
 
-#define SR_MEM_CLEAR(p, len) mem_clear((p), (len))
-#define SR_MEM_CLEAR_FREE(p, len) (SR_MEM_CLEAR((p), (len)), SR_FREE((p)))
+#define GR_MEM_CLEAR(p, len) mem_clear((p), (len))
+#define GR_MEM_CLEAR_FREE(p, len) (GR_MEM_CLEAR((p), (len)), GR_FREE((p)))
 
 /* 初始化内存资源 */
 void create_res();
@@ -77,4 +77,4 @@ void mem_dbg_print_leak_info();
 
 /*===========================================================================*/
 
-#endif /* __SR_MEM_H__ */
+#endif /* __GR_MEM_H__ */

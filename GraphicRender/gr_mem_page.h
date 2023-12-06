@@ -1,5 +1,5 @@
-#ifndef __SR_MEM_PAGE_H__
-#define __SR_MEM_PAGE_H__
+#ifndef __GR_MEM_PAGE_H__
+#define __GR_MEM_PAGE_H__
 
 #include <stddef.h>
 
@@ -75,4 +75,4 @@ int get_addr_block_len(void *ptr, int dbg);
 
 /*===========================================================================*/
 
-#endif /* __SR_MEM_PAGE_H__ */
+#endif /* __GR_MEM_PAGE_H__ */

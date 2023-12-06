@@ -1,5 +1,5 @@
-#ifndef __SR_LINK_H__
-#define __SR_LINK_H__
+#ifndef __GR_LINK_H__
+#define __GR_LINK_H__
 
 /*===========================================================================*/
 /* 无锁双向链表 */
@@ -67,4 +67,4 @@ LINK_NODE *link_remove_force(LINK *link, LINK_NODE *target);
 
 /*===========================================================================*/
 
-#endif /* __SR_LINK_H__ */
+#endif /* __GR_LINK_H__ */

@@ -9,9 +9,9 @@
 #include <string.h>
 #include <assert.h>
 
-#include "sr_mem.h"
-#include "sr_link.h"
-#include "sr_mem_page.h"
+#include "gr_mem.h"
+#include "gr_link.h"
+#include "gr_mem_page.h"
 
 /*===========================================================================*/
 
@@ -569,7 +569,7 @@ void *alloc_block_dbg(size_t len, const char *func, const char *file, int line)
 {
     MEM_PAGE *page  = NULL;
     MEM_BLOCK_DBG *block = NULL;
-    void *ret = alloc_block(len);
+    unsigned char *ret = alloc_block(len);
 
     if (!ret) {
         return NULL;

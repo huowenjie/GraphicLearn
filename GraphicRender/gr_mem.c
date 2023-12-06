@@ -1,8 +1,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "sr_mem.h"
-#include "sr_mem_page.h"
+#include "gr_mem.h"
+#include "gr_mem_page.h"
 
 /*===========================================================================*/
 
@@ -83,12 +83,16 @@ void create_res()
 
 void clear_res()
 {
+    MEM_LOCK(mem_lock);
+    clear_mem_pages();
+    MEM_UNLOCK(mem_lock);
+
     destroy_mutex(&mem_lock);
 }
 
 void *mem_malloc(size_t len)
 {
-    void *ret = NULL;
+    unsigned char *ret = NULL;
     int index = get_page_index(len);
 
     MEM_LOCK(mem_lock);
@@ -113,7 +117,7 @@ void *mem_realloc(void *ptr, size_t len)
     int index_new = 0;
     int dst_size  = 0;
 
-    void *ret = NULL;
+    unsigned char *ret = NULL;
 
     if (!ptr) {
         return NULL;
@@ -168,7 +172,7 @@ void mem_free(void *ptr)
 
 void *mem_dbg_malloc(size_t len, const char *func, const char *file, int line)
 {
-    void *ret  = NULL;
+    unsigned char *ret  = NULL;
     int index = get_page_index(len);
     
     MEM_LOCK(mem_lock);
@@ -193,7 +197,7 @@ void *mem_dbg_realloc(void *ptr, size_t len, const char *func, const char *file,
     int index_new = 0;
     int dst_size  = 0;
 
-    void *ret = NULL;
+    unsigned char *ret = NULL;
 
     if (!ptr) {
         return NULL;
@@ -239,7 +243,7 @@ void *mem_dbg_realloc(void *ptr, size_t len, const char *func, const char *file,
 void *mem_dbg_calloc(size_t num, size_t size, const char *func, const char *file, int line)
 {
     size_t len = num * size;
-    void *ret = NULL;
+    unsigned char *ret = NULL;
     int index = get_page_index(len);
 
     MEM_LOCK(mem_lock);
