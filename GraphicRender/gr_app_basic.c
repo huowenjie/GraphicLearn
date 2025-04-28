@@ -14,25 +14,20 @@
 static char basic_menu[][MENU_STR_LEN] =
 {
     "基础渲染测试",
-    "1) 点是否在三角形内",
-    "2) 三角形交汇",
-    "3) 片元着色器绘制 Piet Mondria",
+    "1) 绘制像素点",
+    "2) 点是否在三角形内",
     "0) 退出"
 };
 
 /*===========================================================================*/
 
+/* 画像素点 */
+static void put_pixel();
+static GR_UINT32 put_pixel_update(GR_ENGINE *engine, void *args);
+
 /* 判断点是否在三角形内 */
 static void point_in_triangle();
 static GR_UINT32 pit_update(GR_ENGINE *engine, void *args);
-
-/* 三个三角形交汇 */
-static void three_triangle();
-static GR_UINT32 three_triangle_update(GR_ENGINE *engine, void *args);
-
-/* 绘制 Piet Mondria */
-static void draw_pietmondria();
-static GR_UINT32 draw_pietmondria_update(GR_ENGINE *engine, void *args);
 
 /*===========================================================================*/
 
@@ -40,21 +35,15 @@ void render_basic()
 {
     int index = 0;
 
-    while (1) 
-    {
+    while (1) {
         index = SELECT_MENU(basic_menu);
-        switch (index) 
-        {
+        switch (index) {
         case 1:
-            point_in_triangle();
+            put_pixel();
             break;
 
         case 2:
-            three_triangle();
-            break;
-
-        case 3:
-            draw_pietmondria();
+            point_in_triangle();
             break;
 
         case 0:
@@ -116,7 +105,7 @@ GR_UINT32 pit_update(GR_ENGINE *engine, void *args)
         case 5: gr_color_set_rgb(&color, 0.0f, 0.0f, 1.0f); break;
         }
 
-        // 如果点在三角形内部，则颜色设置为和三角形一样的颜色
+        /* 如果点在三角形内部，则颜色设置为和三角形一样的颜色 */
         if (gr_vec2f_inside_triangle(&a, &b, &c, pt)) {
             gr_color_set_rgb(&color, 0.0f, 1.0f, 0.0f);
         }
@@ -130,38 +119,19 @@ GR_UINT32 pit_update(GR_ENGINE *engine, void *args)
 
 /*===========================================================================*/
 
-void three_triangle()
+void put_pixel()
 {
     GR_ENGINE *engine = gr_engine_create(480, 360);
 
     gr_engine_create_buffer(engine, 2);
-    gr_engine_set_update(engine, three_triangle_update, NULL);
+    gr_engine_set_update(engine, put_pixel_update, NULL);
 
     gr_engine_render(engine);
     gr_engine_destroy_buffer(engine);
     gr_engine_destroy(engine);
 }
 
-GR_UINT32 three_triangle_update(GR_ENGINE *window, void *args)
-{
-    return 0;
-}
-
-/*===========================================================================*/
-
-void draw_pietmondria()
-{
-    GR_ENGINE *engine = gr_engine_create(480, 360);
-
-    gr_engine_create_buffer(engine, 2);
-    gr_engine_set_update(engine, draw_pietmondria_update, NULL);
-
-    gr_engine_render(engine);
-    gr_engine_destroy_buffer(engine);
-    gr_engine_destroy(engine);
-}
-
-GR_UINT32 draw_pietmondria_update(GR_ENGINE *window, void *args)
+GR_UINT32 put_pixel_update(GR_ENGINE *window, void *args)
 {
     return 0;
 }

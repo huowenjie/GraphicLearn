@@ -23,6 +23,9 @@ GR_BOOL gr_win_event_capture(GR_WINDOW *window, GR_EVENT *evt);
 /* 窗口渲染，bw 和 bh 表示颜色缓冲的宽度和高度 */
 void gr_win_render(GR_WINDOW *window, const GR_UINT32 *buffer, int bw, int bh);
 
+/* 等待 */
+void gr_win_delay_ms(GR_UINT32 ms);
+
 /*---------------------------------------------------------------------------*/
 
 #endif /* __GR_WINDOW_H__ */

@@ -1,17 +1,27 @@
 
 BIN_PATH := .
-INC_PATH := .
+INC_PATH := . ../../SDL3/include
 SRC_PATH := . 
-LIB_PATH :=
-LIB_LIST := SDL2 dl m
+LIB_PATH := .
+LIB_LIST := SDL3
 DEF_LIST := GR_MEMORY_DEBUG
 
 VER_MAJ := 1
 VER_MIN := 0.0
 VERSION := $(VER_MAJ).$(VER_MIN)
 
+# 编译选项
+CFLG += -finput-charset=utf-8
+CFLG += -fexec-charset=gbk
+
+# 链接选项
+# -Wl,-Bsymbolic 强制采用本地的全局变量定义
+# -rpath='$$ORIGIN/' 可执行程序搜索库列表，从可执行程序当前目录开始搜索
+# -rpath-link=$(BIN_DIR) 链接时依赖库路径
+LNK_OPT := -Wl,-Bsymbolic,-rpath='$$ORIGIN/',-rpath-link=$(BIN_PATH)
+
 # 输出文件、soname 设置
-LINK_NAME := GraphicRender.out
+LINK_NAME := GraphicRender.exe
 TARGET := $(BIN_PATH)/$(LINK_NAME)
 
 # 搜索源文件并获取 .c 文件名列表
@@ -43,7 +53,7 @@ vpath %.h $(INC_PATH)
 
 # 定义模式编译规则
 %.o:%.c %.d
-	gcc -g -c $< -o $@ $(INC_PATHS) $(DEF_NAMES) -Wall -Wformat=0
+	gcc -g -c $< -o $@ $(CFLG) $(INC_PATHS) $(DEF_NAMES) -Wall -Wformat=0
 
 # 定义模式规则，生成依赖文件
 %.d:%.c
@@ -51,7 +61,7 @@ vpath %.h $(INC_PATH)
 
 # 显式定义目标规则，链接生成最终的可执行程序
 $(TARGET): $(OBJ_FILES)
-	gcc $^ -o $@ $(LIB_PATHS) $(LNK_LIST)
+	gcc $^ -o $@ $(LNK_OPT) $(LIB_PATHS) $(LNK_LIST)
 
 # 自动生成依赖，将所有的 .d 文件的内容包含在这里
 ifeq ($(MAKECMDGOALS),)

@@ -6,7 +6,6 @@
 
 #include "gr_engine.h"
 #include "gr_window.h"
-#include "gr_system.h"
 
 #include "gr_mem.h"
 
@@ -297,7 +296,7 @@ void gr_engine_render(GR_ENGINE *engine)
         }
 
         gr_win_render(window, engine->cbuffer, width, height);
-        gr_sys_sleep(100);
+        gr_win_delay_ms(100);
     }
 }
 
@@ -309,7 +308,7 @@ void gr_engine_set_aa(GR_ENGINE *engine, ANTI_ALIASING aa)
 }
 
 void gr_engine_draw_pixel(GR_ENGINE *engine, const GR_VEC2F *pt, const GR_COLOR *color)
-{    
+{
     if (engine) {
         draw_pixel(engine, roundf(pt->x), roundf(pt->y), color);
     }

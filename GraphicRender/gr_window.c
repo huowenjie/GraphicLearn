@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "gr_window.h"
 #include "gr_mem.h"
 
@@ -20,7 +20,7 @@ GR_WINDOW *gr_create_window(int width, int height)
     SDL_Texture *texture = NULL;
     SDL_Renderer *renderer = NULL;
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		return NULL;
 	}
 
@@ -32,8 +32,6 @@ GR_WINDOW *gr_create_window(int width, int height)
 
     sdlwnd = SDL_CreateWindow(
         "GraphicRender",
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
         width,
         height,
         0
@@ -43,7 +41,7 @@ GR_WINDOW *gr_create_window(int width, int height)
         goto err;
     }
 
-    renderer = SDL_CreateRenderer(sdlwnd, -1, 0);
+    renderer = SDL_CreateRenderer(sdlwnd, NULL);
     if (!renderer) {
         goto err;
     }
@@ -51,7 +49,7 @@ GR_WINDOW *gr_create_window(int width, int height)
     texture = SDL_CreateTexture(
         renderer,
         SDL_PIXELFORMAT_ARGB8888,
-        SDL_TEXTUREACCESS_STATIC,
+        SDL_TEXTUREACCESS_STREAMING,
         width,
         height
     );
@@ -116,7 +114,7 @@ GR_BOOL gr_win_event_capture(GR_WINDOW *window, GR_EVENT *evt)
     GR_BOOL capture = SDL_PollEvent(sdlevt) ? GR_TRUE : GR_FALSE;
 
     switch (sdlevt->type) {
-    case SDL_QUIT:
+    case SDL_EVENT_QUIT:
         evt->type = GR_EVT_WIN;
         evt->winevt = GR_EVT_WIN_CLOSE;
         break;
@@ -127,10 +125,22 @@ GR_BOOL gr_win_event_capture(GR_WINDOW *window, GR_EVENT *evt)
 
 void gr_win_render(GR_WINDOW *window, const GR_UINT32 *buffer, int bw, int bh)
 {
+    GR_UINT8 *pix;
+    int pitch;
+    int i, sp, dp;
+
     SDL_Texture *texture = window->texture;
     SDL_Renderer *renderer = window->renderer;
 
-    SDL_UpdateTexture(texture, NULL, buffer, bw * sizeof(Uint32));
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_LockTexture(texture, NULL, (void**)&pix, &pitch);
+    memcpy(pix, buffer, bw * bh * 4);
+
+    SDL_UnlockTexture(texture);  
+    SDL_RenderTexture(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
+}
+
+void gr_win_delay_ms(GR_UINT32 ms)
+{
+    SDL_Delay(ms);
 }
