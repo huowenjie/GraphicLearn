@@ -12,7 +12,7 @@ static char main_menu[][MENU_STR_LEN] =
 {
 	"主菜单",
 	"1) 基础渲染测试",
-    "2) 三棱锥光栅化",
+    "2) 光线追踪",
 	"0) 退出"
 };
 
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
             break;
 
         case 2:
-            render_pyramid();
+            raytrace();
             break;
 
         case 0:

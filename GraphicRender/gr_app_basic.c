@@ -54,6 +54,35 @@ void render_basic()
 
 /*===========================================================================*/
 
+void put_pixel()
+{
+    GR_ENGINE *engine = gr_engine_create(480, 360);
+
+    gr_engine_create_buffer(engine, 2);
+    gr_engine_set_update(engine, put_pixel_update, NULL);
+
+    gr_engine_render(engine);
+    gr_engine_destroy_buffer(engine);
+    gr_engine_destroy(engine);
+}
+
+GR_UINT32 put_pixel_update(GR_ENGINE *engine, void *args)
+{
+    GR_VEC2F pt = gr_vec2f_xy(30.0f, 30.0f);
+    GR_COLOR color = gr_color_rgb(0.0f, 1.0f, 0.0f);
+
+    float width = (float)gr_engine_get_width(engine);
+    float height = (float)gr_engine_get_height(engine);
+
+    pt.x = randomf(1.0f, width - 2.0f);
+    pt.y = randomf(1.0f, height - 2.0f);
+    gr_engine_draw_pixel(engine, &pt, &color);
+
+    return 0;
+}
+
+/*===========================================================================*/
+
 void point_in_triangle()
 {
     GR_ENGINE *engine = gr_engine_create(480, 360);
@@ -98,11 +127,11 @@ GR_UINT32 pit_update(GR_ENGINE *engine, void *args)
         colorsel = randomi(1, 5);
 
         switch(colorsel) {
-        case 1: gr_color_set_rgb(&color, 1.0f, 0.0f, 1.0f); break;
-        case 2: gr_color_set_rgb(&color, 1.0f, 1.0f, 0.0f); break;
-        case 3: gr_color_set_rgb(&color, 0.0f, 1.0f, 1.0f); break;
-        case 4: gr_color_set_rgb(&color, 1.0f, 1.0f, 1.0f); break;
-        case 5: gr_color_set_rgb(&color, 0.0f, 0.0f, 1.0f); break;
+            case 1: gr_color_set_rgb(&color, 1.0f, 0.0f, 1.0f); break;
+            case 2: gr_color_set_rgb(&color, 1.0f, 1.0f, 0.0f); break;
+            case 3: gr_color_set_rgb(&color, 0.0f, 1.0f, 1.0f); break;
+            case 4: gr_color_set_rgb(&color, 1.0f, 1.0f, 1.0f); break;
+            case 5: gr_color_set_rgb(&color, 0.0f, 0.0f, 1.0f); break;
         }
 
         /* 如果点在三角形内部，则颜色设置为和三角形一样的颜色 */
@@ -114,25 +143,6 @@ GR_UINT32 pit_update(GR_ENGINE *engine, void *args)
     }
 
     GR_FREE(tp);
-    return 0;
-}
-
-/*===========================================================================*/
-
-void put_pixel()
-{
-    GR_ENGINE *engine = gr_engine_create(480, 360);
-
-    gr_engine_create_buffer(engine, 2);
-    gr_engine_set_update(engine, put_pixel_update, NULL);
-
-    gr_engine_render(engine);
-    gr_engine_destroy_buffer(engine);
-    gr_engine_destroy(engine);
-}
-
-GR_UINT32 put_pixel_update(GR_ENGINE *window, void *args)
-{
     return 0;
 }
 

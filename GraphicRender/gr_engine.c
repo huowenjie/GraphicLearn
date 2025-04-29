@@ -288,7 +288,7 @@ void gr_engine_render(GR_ENGINE *engine)
         float *zbuffer = engine->zbuffer;
         float *zchild = engine->child_zbuffer;
 
-        clear_buffer(buffer, zbuffer, count, 0, -FLT_MAX);
+        clear_buffer(buffer, zbuffer, count, 0xFF000000, -FLT_MAX);
         clear_buffer(child, zchild, count * sl * sl, 0, -FLT_MAX);
 
         if (update) {

@@ -125,9 +125,8 @@ GR_BOOL gr_win_event_capture(GR_WINDOW *window, GR_EVENT *evt)
 
 void gr_win_render(GR_WINDOW *window, const GR_UINT32 *buffer, int bw, int bh)
 {
-    GR_UINT8 *pix;
-    int pitch;
-    int i, sp, dp;
+    GR_UINT8 *pix = NULL;
+    int pitch = 0;
 
     SDL_Texture *texture = window->texture;
     SDL_Renderer *renderer = window->renderer;
